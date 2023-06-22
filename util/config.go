@@ -13,7 +13,7 @@ type Config struct {
 
 func NewConfig() *Config {
 	var c Config
-	err := envconfig.Process("myapp", &c)
+	err := envconfig.Process("", &c)
 	if err != nil {
 		log.Fatal().Err(err)
 	}

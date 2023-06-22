@@ -1,17 +1,19 @@
+-- migrate:up
 CREATE TABLE spaces
 (
     id          BIGSERIAL PRIMARY KEY,
     parent_id   BIGSERIAL REFERENCES spaces (id),
-    name        text NOT NULL,
-    description text
+    name        TEXT NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE users
 (
     id           BIGSERIAL PRIMARY KEY,
-    email        text NOT NULL,
-    display_name text NOT NULL,
-    bio          text
+    password     TEXT NOT NULL,
+    email        TEXT NOT NULL UNIQUE ,
+    display_name TEXT NOT NULL,
+    bio          TEXT
 );
 
 CREATE TABLE posts
@@ -19,8 +21,8 @@ CREATE TABLE posts
     id         BIGSERIAL PRIMARY KEY,
     space_id   BIGINT REFERENCES spaces (id),
     poster_id  BIGINT REFERENCES users (id),
-    topic      text NOT NULL,
-    content    text,
+    topic      TEXT NOT NULL,
+    content    TEXT,
     up_votes   INTEGER,
     down_votes INTEGER
 );
@@ -31,7 +33,7 @@ CREATE TABLE comments
     post_id    BIGINT REFERENCES posts (id),
     poster_id  BIGINT REFERENCES users (id),
     parent_id  BIGINT REFERENCES comments (id),
-    content    text,
+    content    TEXT,
     up_votes   INTEGER,
     down_votes INTEGER
 );
@@ -60,4 +62,5 @@ CREATE TABLE subscriptions
     user_id  BIGINT REFERENCES users (id) NOT NULL,
     space_id BIGINT REFERENCES spaces (id)
 );
+-- migrate:down
 

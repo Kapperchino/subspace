@@ -10,6 +10,23 @@ FROM posts
 WHERE id = $1
 LIMIT 1;
 
+-- name: CreateUser :one
+INSERT INTO users (id, password, email, display_name, bio)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *;
+
+-- name: GetUser :one
+SELECT *
+FROM users
+WHERE id = $1
+LIMIT 1;
+
+-- name: GetUserFromEmail :one
+SELECT *
+FROM users
+WHERE email = $1
+LIMIT 1;
+
 -- name: ListPosts :many
 SELECT *
 FROM posts

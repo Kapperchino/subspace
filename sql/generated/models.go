@@ -6,7 +6,52 @@ package sql
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 )
+
+type ContentType string
+
+const (
+	ContentTypeVideo   ContentType = "video"
+	ContentTypePicture ContentType = "picture"
+	ContentTypeText    ContentType = "text"
+)
+
+func (e *ContentType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ContentType(s)
+	case string:
+		*e = ContentType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ContentType: %T", src)
+	}
+	return nil
+}
+
+type NullContentType struct {
+	ContentType ContentType
+	Valid       bool // Valid is true if ContentType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullContentType) Scan(value interface{}) error {
+	if value == nil {
+		ns.ContentType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ContentType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullContentType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ContentType), nil
+}
 
 type Comment struct {
 	ID        int64
@@ -34,14 +79,16 @@ type Like struct {
 }
 
 type Post struct {
-	ID        int64
-	SpaceID   sql.NullInt64
-	PosterID  sql.NullInt64
-	Topic     string
-	Content   sql.NullString
-	UpVotes   sql.NullInt32
-	DownVotes sql.NullInt32
-	Created   sql.NullTime
+	ID          int64
+	SpaceID     sql.NullInt64
+	PosterID    sql.NullInt64
+	Topic       string
+	Body        sql.NullString
+	ContentType NullContentType
+	Content     sql.NullString
+	UpVotes     sql.NullInt32
+	DownVotes   sql.NullInt32
+	Created     sql.NullTime
 }
 
 type Space struct {

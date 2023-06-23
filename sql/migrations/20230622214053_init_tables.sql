@@ -22,15 +22,19 @@ CREATE TABLE users
     bio          TEXT
 );
 
+CREATE TYPE content_type AS ENUM ('video', 'picture', 'text');
+
 CREATE TABLE posts
 (
-    id         BIGSERIAL PRIMARY KEY,
-    space_id   BIGINT REFERENCES spaces (id),
-    poster_id  BIGINT REFERENCES users (id),
-    topic      TEXT NOT NULL,
-    content    TEXT,
-    up_votes   INTEGER,
-    down_votes INTEGER
+    id           BIGSERIAL PRIMARY KEY,
+    space_id     BIGINT REFERENCES spaces (id),
+    poster_id    BIGINT REFERENCES users (id),
+    topic        TEXT NOT NULL,
+    body         TEXT,
+    content_type content_type,
+    content      TEXT,
+    up_votes     INTEGER,
+    down_votes   INTEGER
 );
 
 CREATE TABLE comments

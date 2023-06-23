@@ -39,6 +39,9 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 	queries := gen.New(u.getDB())
+	if req.ContentType == "" {
+		req.ContentType = models.CONTENT_TEXT
+	}
 	post, err := queries.CreatePost(c.Context(), gen.CreatePostParams{
 		SpaceID: sql.NullInt64{
 			Int64: req.SpaceId,
@@ -49,9 +52,17 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 			Valid: true,
 		},
 		Topic: req.Topic,
+		Body: sql.NullString{
+			String: req.Body,
+			Valid:  true,
+		},
 		Content: sql.NullString{
 			String: req.Content,
-			Valid:  true,
+			Valid:  req.Content != "",
+		},
+		ContentType: gen.NullContentType{
+			ContentType: gen.ContentType(req.ContentType),
+			Valid:       req.ContentType != "",
 		},
 	})
 	if err != nil {
@@ -59,14 +70,16 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Post{
-		Id:        post.ID,
-		SpaceId:   post.SpaceID.Int64,
-		PosterId:  post.PosterID.Int64,
-		Topic:     post.Topic,
-		Content:   post.Content.String,
-		UpVotes:   int64(post.UpVotes.Int32),
-		DownVotes: int64(post.DownVotes.Int32),
-		Created:   post.Created.Time,
+		Id:          post.ID,
+		SpaceId:     post.SpaceID.Int64,
+		PosterId:    post.PosterID.Int64,
+		Body:        post.Body.String,
+		Topic:       post.Topic,
+		Content:     post.Content.String,
+		ContentType: models.ContentType(post.ContentType.ContentType),
+		UpVotes:     int64(post.UpVotes.Int32),
+		DownVotes:   int64(post.DownVotes.Int32),
+		Created:     post.Created.Time,
 	})
 }
 
@@ -90,47 +103,27 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Post{
-		Id:        res.ID,
-		SpaceId:   res.SpaceID.Int64,
-		PosterId:  res.PosterID.Int64,
-		Topic:     res.Topic,
-		Content:   res.Content.String,
-		UpVotes:   int64(res.UpVotes.Int32),
-		DownVotes: int64(res.DownVotes.Int32),
-		Created:   res.Created.Time,
+		Id:          res.ID,
+		SpaceId:     res.SpaceID.Int64,
+		PosterId:    res.PosterID.Int64,
+		Topic:       res.Topic,
+		Body:        res.Body.String,
+		ContentType: models.ContentType(res.ContentType.ContentType),
+		Content:     res.Content.String,
+		UpVotes:     int64(res.UpVotes.Int32),
+		DownVotes:   int64(res.DownVotes.Int32),
+		Created:     res.Created.Time,
 	})
 }
 
-func (u *PostService) GetSpaces(c *fiber.Ctx) error {
-	name := c.Query("name")
-	if name == "" {
-		parentId := c.QueryInt("parentId")
-		// get all spaces
-		if parentId == 0 {
-			parentId = 1
-		}
-		queries := gen.New(u.getDB())
-		res, err := queries.GetSpacesOfParent(c.Context(), int64(parentId))
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.Send(nil)
-			}
-			log.Error().Err(err).Msg("Error while creating using in db")
-			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
-		}
-		var spaces []models.Space
-		for _, space := range res {
-			spaces = append(spaces, models.Space{
-				ID:          space.ID,
-				ParentID:    space.ParentID,
-				Name:        space.Name,
-				Description: space.Description.String,
-			})
-		}
-		return c.JSON(spaces)
+func (u *PostService) GetPosts(c *fiber.Ctx) error {
+	spaceId := c.QueryInt("spaceId", -1)
+	//TODO:get post by popularity
+	if spaceId == -1 {
+		spaceId = 1
 	}
 	queries := gen.New(u.getDB())
-	res, err := queries.GetSpaceByName(c.Context(), name)
+	res, err := queries.GetPostsForSpace(c.Context(), sql.NullInt64{Int64: int64(spaceId), Valid: true})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Send(nil)
@@ -138,10 +131,20 @@ func (u *PostService) GetSpaces(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	return c.JSON(models.Space{
-		ID:          res.ID,
-		ParentID:    res.ParentID,
-		Name:        res.Name,
-		Description: res.Description.String,
-	})
+	var list []models.Post
+	for _, post := range res {
+		list = append(list, models.Post{
+			Id:          post.ID,
+			SpaceId:     post.SpaceID.Int64,
+			PosterId:    post.PosterID.Int64,
+			Topic:       post.Topic,
+			Content:     post.Content.String,
+			ContentType: models.ContentType(post.ContentType.ContentType),
+			Body:        post.Body.String,
+			UpVotes:     int64(post.UpVotes.Int32),
+			DownVotes:   int64(post.DownVotes.Int32),
+			Created:     post.Created.Time,
+		})
+	}
+	return c.JSON(list)
 }

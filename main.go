@@ -72,6 +72,8 @@ func main() {
 
 	app.Get("/posts/:id", postService.GetPostById)
 
+	app.Get("/posts/", postService.GetPosts)
+
 	app.Listen(":" + strconv.Itoa(config.Port))
 }
 

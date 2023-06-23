@@ -11,16 +11,18 @@ import (
 )
 
 const createPost = `-- name: CreatePost :one
-INSERT INTO posts (space_id, poster_id, topic, content)
-VALUES ($1, $2, $3, $4)
-RETURNING id, space_id, poster_id, topic, content, up_votes, down_votes, created
+INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
 `
 
 type CreatePostParams struct {
-	SpaceID  sql.NullInt64
-	PosterID sql.NullInt64
-	Topic    string
-	Content  sql.NullString
+	SpaceID     sql.NullInt64
+	PosterID    sql.NullInt64
+	Topic       string
+	Body        sql.NullString
+	Content     sql.NullString
+	ContentType NullContentType
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
@@ -28,7 +30,9 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		arg.SpaceID,
 		arg.PosterID,
 		arg.Topic,
+		arg.Body,
 		arg.Content,
+		arg.ContentType,
 	)
 	var i Post
 	err := row.Scan(
@@ -36,6 +40,8 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.SpaceID,
 		&i.PosterID,
 		&i.Topic,
+		&i.Body,
+		&i.ContentType,
 		&i.Content,
 		&i.UpVotes,
 		&i.DownVotes,
@@ -44,7 +50,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 	return i, err
 }
 
-const createSpace = `-- name: CreateSpace :exec
+const createSpace = `-- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id)
 VALUES ($1, $2, $3)
 RETURNING id, parent_id, name, description, created
@@ -56,9 +62,17 @@ type CreateSpaceParams struct {
 	ParentID    int64
 }
 
-func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) error {
-	_, err := q.db.ExecContext(ctx, createSpace, arg.Name, arg.Description, arg.ParentID)
-	return err
+func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space, error) {
+	row := q.db.QueryRowContext(ctx, createSpace, arg.Name, arg.Description, arg.ParentID)
+	var i Space
+	err := row.Scan(
+		&i.ID,
+		&i.ParentID,
+		&i.Name,
+		&i.Description,
+		&i.Created,
+	)
+	return i, err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -105,7 +119,7 @@ func (q *Queries) DeleteSpace(ctx context.Context, id int64) error {
 }
 
 const getPost = `-- name: GetPost :one
-SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
+SELECT id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
 FROM posts
 WHERE id = $1
 LIMIT 1
@@ -119,6 +133,8 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 		&i.SpaceID,
 		&i.PosterID,
 		&i.Topic,
+		&i.Body,
+		&i.ContentType,
 		&i.Content,
 		&i.UpVotes,
 		&i.DownVotes,
@@ -128,7 +144,7 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 }
 
 const getPostsForSpace = `-- name: GetPostsForSpace :many
-SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
+SELECT id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
 FROM posts
 WHERE space_id = $1
 `
@@ -147,6 +163,8 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 			&i.SpaceID,
 			&i.PosterID,
 			&i.Topic,
+			&i.Body,
+			&i.ContentType,
 			&i.Content,
 			&i.UpVotes,
 			&i.DownVotes,

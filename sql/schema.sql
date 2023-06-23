@@ -9,6 +9,17 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: content_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.content_type AS ENUM (
+    'video',
+    'picture',
+    'text'
+);
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -121,6 +132,8 @@ CREATE TABLE public.posts (
     space_id bigint,
     poster_id bigint,
     topic text NOT NULL,
+    body text,
+    content_type public.content_type,
     content text,
     up_votes integer,
     down_votes integer,

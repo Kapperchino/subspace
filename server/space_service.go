@@ -39,7 +39,7 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 	queries := gen.New(u.getDB())
-	err = queries.CreateSpace(c.Context(), gen.CreateSpaceParams{
+	space, err := queries.CreateSpace(c.Context(), gen.CreateSpaceParams{
 		Name:        req.Name,
 		Description: sql.NullString{String: req.Description, Valid: true},
 		ParentID:    req.Parent,
@@ -48,7 +48,12 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	return c.SendStatus(200)
+	return c.JSON(models.Space{
+		ID:          space.ID,
+		ParentID:    space.ParentID,
+		Name:        space.Name,
+		Description: space.Description.String,
+	})
 }
 
 func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {

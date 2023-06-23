@@ -15,7 +15,7 @@ FROM spaces
 WHERE name = $1
 LIMIT 1;
 
--- name: CreateSpace :exec
+-- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id)
 VALUES ($1, $2, $3)
 RETURNING *;
@@ -43,8 +43,8 @@ WHERE email = $1
 LIMIT 1;
 
 -- name: CreatePost :one
-INSERT INTO posts (space_id, poster_id, topic, content)
-VALUES ($1, $2, $3, $4)
+INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetPost :one

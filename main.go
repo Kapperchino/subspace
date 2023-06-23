@@ -38,6 +38,12 @@ func main() {
 		Config:     config,
 		Validation: validation,
 	}
+
+	spaceService := server.SpaceService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
 
@@ -50,7 +56,10 @@ func main() {
 	}))
 
 	// Restricted Routes
-	app.Get("/restricted", restricted)
+	app.Post("/spaces", spaceService.CreateSpace)
+
+	app.Get("/spaces/", spaceService.GetSpaces)
+	app.Get("/spaces/:id", spaceService.GetSpaceById)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

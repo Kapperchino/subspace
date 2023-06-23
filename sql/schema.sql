@@ -24,7 +24,8 @@ CREATE TABLE public.comments (
     parent_id bigint,
     content text,
     up_votes integer,
-    down_votes integer
+    down_votes integer,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -122,7 +123,8 @@ CREATE TABLE public.posts (
     topic text NOT NULL,
     content text,
     up_votes integer,
-    down_votes integer
+    down_votes integer,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -162,7 +164,8 @@ CREATE TABLE public.spaces (
     id bigint NOT NULL,
     parent_id bigint NOT NULL,
     name text NOT NULL,
-    description text
+    description text,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -243,7 +246,8 @@ CREATE TABLE public.users (
     password text NOT NULL,
     email text NOT NULL,
     display_name text NOT NULL,
-    bio text
+    bio text,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -363,6 +367,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: spaces spaces_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.spaces
+    ADD CONSTRAINT spaces_name_key UNIQUE (name);
+
+
+--
 -- Name: spaces spaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -376,6 +388,14 @@ ALTER TABLE ONLY public.spaces
 
 ALTER TABLE ONLY public.subscriptions
     ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_display_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_display_name_key UNIQUE (display_name);
 
 
 --
@@ -483,11 +503,11 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- Name: spaces spaces_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: spaces spaces_self_ref; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.spaces
-    ADD CONSTRAINT spaces_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.spaces(id);
+    ADD CONSTRAINT spaces_self_ref FOREIGN KEY (parent_id) REFERENCES public.spaces(id);
 
 
 --
@@ -516,4 +536,5 @@ ALTER TABLE ONLY public.subscriptions
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20230622214053');
+    ('20230622214053'),
+    ('20230623164659');

@@ -4,6 +4,32 @@ FROM spaces
 WHERE id = $1
 LIMIT 1;
 
+-- name: GetSpacesOfParent :many
+SELECT *
+FROM spaces
+WHERE parent_id = $1;
+
+-- name: GetSpaceByName :one
+SELECT *
+FROM spaces
+WHERE name = $1
+LIMIT 1;
+
+-- name: CreateSpace :exec
+INSERT INTO spaces (name, description, parent_id)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: DeleteSpace :exec
+DELETE
+FROM spaces
+WHERE id = $1;
+
+-- name: GetPostsForSpace :many
+SELECT *
+FROM posts
+WHERE space_id = $1;
+
 -- name: GetPost :one
 SELECT *
 FROM posts
@@ -31,13 +57,3 @@ LIMIT 1;
 SELECT *
 FROM posts
 WHERE space_id = $1;
-
--- name: CreateSpace :exec
-INSERT INTO spaces (name, description, parent_id)
-VALUES ($1, $2, $3)
-RETURNING *;
-
--- name: DeleteSpace :exec
-DELETE
-FROM spaces
-WHERE id = $1;

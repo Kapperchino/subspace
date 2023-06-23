@@ -16,6 +16,7 @@ type Comment struct {
 	Content   sql.NullString
 	UpVotes   sql.NullInt32
 	DownVotes sql.NullInt32
+	Created   sql.NullTime
 }
 
 type Dislike struct {
@@ -40,13 +41,15 @@ type Post struct {
 	Content   sql.NullString
 	UpVotes   sql.NullInt32
 	DownVotes sql.NullInt32
+	Created   sql.NullTime
 }
 
 type Space struct {
 	ID          int64
-	ParentID    sql.NullInt64
+	ParentID    int64
 	Name        string
 	Description sql.NullString
+	Created     sql.NullTime
 }
 
 type Subscription struct {
@@ -61,4 +64,5 @@ type User struct {
 	Email       string
 	DisplayName string
 	Bio         sql.NullString
+	Created     sql.NullTime
 }

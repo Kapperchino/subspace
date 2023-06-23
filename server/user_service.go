@@ -86,6 +86,9 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	user, err := queries.GetUserFromEmail(c.Context(), req.Email)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
 		log.Error().Err(err).Msg("Error while getting user from db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}

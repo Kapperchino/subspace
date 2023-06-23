@@ -2,16 +2,22 @@
 CREATE TABLE spaces
 (
     id          BIGSERIAL PRIMARY KEY,
-    parent_id   BIGSERIAL REFERENCES spaces (id),
-    name        TEXT NOT NULL,
+    parent_id   BIGSERIAL NOT NULL,
+    name        TEXT      NOT NULL,
     description TEXT
 );
+
+INSERT INTO spaces (name, description, parent_id)
+VALUES ('root', 'base space', 1);
+
+ALTER TABLE spaces
+    ADD CONSTRAINT spaces_self_ref foreign key (parent_id) references spaces (id);
 
 CREATE TABLE users
 (
     id           BIGSERIAL PRIMARY KEY,
     password     TEXT NOT NULL,
-    email        TEXT NOT NULL UNIQUE ,
+    email        TEXT NOT NULL UNIQUE,
     display_name TEXT NOT NULL,
     bio          TEXT
 );

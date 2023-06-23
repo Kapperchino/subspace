@@ -13,13 +13,13 @@ import (
 const createSpace = `-- name: CreateSpace :exec
 INSERT INTO spaces (name, description, parent_id)
 VALUES ($1, $2, $3)
-RETURNING id, parent_id, name, description
+RETURNING id, parent_id, name, description, created
 `
 
 type CreateSpaceParams struct {
 	Name        string
 	Description sql.NullString
-	ParentID    sql.NullInt64
+	ParentID    int64
 }
 
 func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) error {
@@ -30,7 +30,7 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) error 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
-RETURNING id, password, email, display_name, bio
+RETURNING id, password, email, display_name, bio, created
 `
 
 type CreateUserParams struct {
@@ -54,6 +54,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.Created,
 	)
 	return i, err
 }
@@ -70,7 +71,7 @@ func (q *Queries) DeleteSpace(ctx context.Context, id int64) error {
 }
 
 const getPost = `-- name: GetPost :one
-SELECT id, space_id, poster_id, topic, content, up_votes, down_votes
+SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
 FROM posts
 WHERE id = $1
 LIMIT 1
@@ -87,12 +88,51 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 		&i.Content,
 		&i.UpVotes,
 		&i.DownVotes,
+		&i.Created,
 	)
 	return i, err
 }
 
+const getPostsForSpace = `-- name: GetPostsForSpace :many
+SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
+FROM posts
+WHERE space_id = $1
+`
+
+func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForSpace, spaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceID,
+			&i.PosterID,
+			&i.Topic,
+			&i.Content,
+			&i.UpVotes,
+			&i.DownVotes,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSpace = `-- name: GetSpace :one
-SELECT id, parent_id, name, description
+SELECT id, parent_id, name, description, created
 FROM spaces
 WHERE id = $1
 LIMIT 1
@@ -106,12 +146,68 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (Space, error) {
 		&i.ParentID,
 		&i.Name,
 		&i.Description,
+		&i.Created,
 	)
 	return i, err
 }
 
+const getSpaceByName = `-- name: GetSpaceByName :one
+SELECT id, parent_id, name, description, created
+FROM spaces
+WHERE name = $1
+LIMIT 1
+`
+
+func (q *Queries) GetSpaceByName(ctx context.Context, name string) (Space, error) {
+	row := q.db.QueryRowContext(ctx, getSpaceByName, name)
+	var i Space
+	err := row.Scan(
+		&i.ID,
+		&i.ParentID,
+		&i.Name,
+		&i.Description,
+		&i.Created,
+	)
+	return i, err
+}
+
+const getSpacesOfParent = `-- name: GetSpacesOfParent :many
+SELECT id, parent_id, name, description, created
+FROM spaces
+WHERE parent_id = $1
+`
+
+func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Space, error) {
+	rows, err := q.db.QueryContext(ctx, getSpacesOfParent, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Space
+	for rows.Next() {
+		var i Space
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Name,
+			&i.Description,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
-SELECT id, password, email, display_name, bio
+SELECT id, password, email, display_name, bio, created
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -126,12 +222,13 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.Created,
 	)
 	return i, err
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT id, password, email, display_name, bio
+SELECT id, password, email, display_name, bio, created
 FROM users
 WHERE email = $1
 LIMIT 1
@@ -146,12 +243,13 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.Created,
 	)
 	return i, err
 }
 
 const listPosts = `-- name: ListPosts :many
-SELECT id, space_id, poster_id, topic, content, up_votes, down_votes
+SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
 FROM posts
 WHERE space_id = $1
 `
@@ -173,6 +271,7 @@ func (q *Queries) ListPosts(ctx context.Context, spaceID sql.NullInt64) ([]Post,
 			&i.Content,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.Created,
 		); err != nil {
 			return nil, err
 		}

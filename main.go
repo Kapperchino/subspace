@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/Kapperchino/subspace/server"
 	"github.com/Kapperchino/subspace/util"
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
@@ -38,13 +39,10 @@ func main() {
 		Validation: validation,
 	}
 	// Create user
-	app.Post("/user", userService.CreateUser)
+	app.Post("/auth/user", userService.CreateUser)
 
 	// Login route
-	app.Post("/login", userService.Login)
-
-	// Unauthenticated route
-	app.Get("/", accessible)
+	app.Post("/auth/login", userService.Login)
 
 	// JWT Middleware
 	app.Use(jwtware.New(jwtware.Config{
@@ -57,13 +55,9 @@ func main() {
 	app.Listen(":" + strconv.Itoa(config.Port))
 }
 
-func accessible(c *fiber.Ctx) error {
-	return c.SendString("Accessible")
-}
-
 func restricted(c *fiber.Ctx) error {
 	user := c.Locals("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
-	name := claims["name"].(string)
-	return c.SendString("Welcome " + name)
+	id := claims["exp"].(float64)
+	return c.SendString("Welcome " + fmt.Sprintf("%f", id))
 }

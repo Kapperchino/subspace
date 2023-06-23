@@ -28,13 +28,12 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) error 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, password, email, display_name, bio)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO users (password, email, display_name, bio)
+VALUES ($1, $2, $3, $4)
 RETURNING id, password, email, display_name, bio
 `
 
 type CreateUserParams struct {
-	ID          int64
 	Password    string
 	Email       string
 	DisplayName string
@@ -43,7 +42,6 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
-		arg.ID,
 		arg.Password,
 		arg.Email,
 		arg.DisplayName,

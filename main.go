@@ -44,6 +44,12 @@ func main() {
 		Config:     config,
 		Validation: validation,
 	}
+
+	postService := server.PostService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
 
@@ -59,7 +65,12 @@ func main() {
 	app.Post("/spaces", spaceService.CreateSpace)
 
 	app.Get("/spaces/", spaceService.GetSpaces)
+
 	app.Get("/spaces/:id", spaceService.GetSpaceById)
+
+	app.Post("/posts", postService.CreatePost)
+
+	app.Get("/posts/:id", postService.GetPostById)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

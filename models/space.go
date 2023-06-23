@@ -12,7 +12,3 @@ type Space struct {
 	Name        string
 	Description string
 }
-
-type GetSpace struct {
-	Name string
-}

@@ -10,6 +10,40 @@ import (
 	"database/sql"
 )
 
+const createPost = `-- name: CreatePost :one
+INSERT INTO posts (space_id, poster_id, topic, content)
+VALUES ($1, $2, $3, $4)
+RETURNING id, space_id, poster_id, topic, content, up_votes, down_votes, created
+`
+
+type CreatePostParams struct {
+	SpaceID  sql.NullInt64
+	PosterID sql.NullInt64
+	Topic    string
+	Content  sql.NullString
+}
+
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, createPost,
+		arg.SpaceID,
+		arg.PosterID,
+		arg.Topic,
+		arg.Content,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.SpaceID,
+		&i.PosterID,
+		&i.Topic,
+		&i.Content,
+		&i.UpVotes,
+		&i.DownVotes,
+		&i.Created,
+	)
+	return i, err
+}
+
 const createSpace = `-- name: CreateSpace :exec
 INSERT INTO spaces (name, description, parent_id)
 VALUES ($1, $2, $3)
@@ -246,42 +280,4 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.Created,
 	)
 	return i, err
-}
-
-const listPosts = `-- name: ListPosts :many
-SELECT id, space_id, poster_id, topic, content, up_votes, down_votes, created
-FROM posts
-WHERE space_id = $1
-`
-
-func (q *Queries) ListPosts(ctx context.Context, spaceID sql.NullInt64) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, listPosts, spaceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Post
-	for rows.Next() {
-		var i Post
-		if err := rows.Scan(
-			&i.ID,
-			&i.SpaceID,
-			&i.PosterID,
-			&i.Topic,
-			&i.Content,
-			&i.UpVotes,
-			&i.DownVotes,
-			&i.Created,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

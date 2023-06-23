@@ -25,17 +25,6 @@ DELETE
 FROM spaces
 WHERE id = $1;
 
--- name: GetPostsForSpace :many
-SELECT *
-FROM posts
-WHERE space_id = $1;
-
--- name: GetPost :one
-SELECT *
-FROM posts
-WHERE id = $1
-LIMIT 1;
-
 -- name: CreateUser :one
 INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
@@ -53,7 +42,18 @@ FROM users
 WHERE email = $1
 LIMIT 1;
 
--- name: ListPosts :many
+-- name: CreatePost :one
+INSERT INTO posts (space_id, poster_id, topic, content)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
+-- name: GetPost :one
+SELECT *
+FROM posts
+WHERE id = $1
+LIMIT 1;
+
+-- name: GetPostsForSpace :many
 SELECT *
 FROM posts
 WHERE space_id = $1;

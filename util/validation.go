@@ -18,7 +18,7 @@ func (v Validation) ValidateStruct(input any) error {
 	var msgs string
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
-			msgs += fmt.Sprintf("Field %s needs to be %s", err.Field(), err.Tag())
+			msgs += fmt.Sprintf("Field %s needs to be %s  ", err.Field(), err.Tag())
 		}
 		// from here you can create your own error messages in whatever language you wish
 		return errors.New(msgs)

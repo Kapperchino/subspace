@@ -107,6 +107,82 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const createVote = `-- name: CreateVote :one
+INSERT INTO votes (user_id, post_or_comment_id, vote_type, is_up_vote)
+VALUES ($1, $2, $3, $4)
+RETURNING id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
+`
+
+type CreateVoteParams struct {
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsUpVote        sql.NullBool
+}
+
+func (q *Queries) CreateVote(ctx context.Context, arg CreateVoteParams) (Vote, error) {
+	row := q.db.QueryRowContext(ctx, createVote,
+		arg.UserID,
+		arg.PostOrCommentID,
+		arg.VoteType,
+		arg.IsUpVote,
+	)
+	var i Vote
+	err := row.Scan(
+		&i.ID,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted,
+	)
+	return i, err
+}
+
+const deDownVoteComment = `-- name: DeDownVoteComment :exec
+UPDATE comments
+SET down_votes = down_votes - 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DeDownVoteComment(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deDownVoteComment, posterID)
+	return err
+}
+
+const deDownVotePost = `-- name: DeDownVotePost :exec
+UPDATE posts
+SET down_votes = down_votes - 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DeDownVotePost(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deDownVotePost, posterID)
+	return err
+}
+
+const deUpVoteComment = `-- name: DeUpVoteComment :exec
+UPDATE comments
+SET up_votes = up_votes - 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DeUpVoteComment(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deUpVoteComment, posterID)
+	return err
+}
+
+const deUpVotePost = `-- name: DeUpVotePost :exec
+UPDATE posts
+SET up_votes = up_votes - 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DeUpVotePost(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, deUpVotePost, posterID)
+	return err
+}
+
 const deleteSpace = `-- name: DeleteSpace :exec
 DELETE
 FROM spaces
@@ -115,6 +191,39 @@ WHERE id = $1
 
 func (q *Queries) DeleteSpace(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteSpace, id)
+	return err
+}
+
+const deleteVote = `-- name: DeleteVote :exec
+UPDATE votes
+set is_deleted = true
+where id = $1
+`
+
+func (q *Queries) DeleteVote(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteVote, id)
+	return err
+}
+
+const downVoteComment = `-- name: DownVoteComment :exec
+UPDATE comments
+SET down_votes = down_votes + 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DownVoteComment(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, downVoteComment, posterID)
+	return err
+}
+
+const downVotePost = `-- name: DownVotePost :exec
+UPDATE posts
+SET down_votes = down_votes + 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) DownVotePost(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, downVotePost, posterID)
 	return err
 }
 
@@ -298,4 +407,108 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.Created,
 	)
 	return i, err
+}
+
+const getVoteForPostOrCommentForUser = `-- name: GetVoteForPostOrCommentForUser :one
+SELECT id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
+FROM votes
+WHERE user_id = $1
+  AND post_or_comment_id = $2
+  AND is_deleted = false
+LIMIT 1
+`
+
+type GetVoteForPostOrCommentForUserParams struct {
+	UserID          int64
+	PostOrCommentID int64
+}
+
+func (q *Queries) GetVoteForPostOrCommentForUser(ctx context.Context, arg GetVoteForPostOrCommentForUserParams) (Vote, error) {
+	row := q.db.QueryRowContext(ctx, getVoteForPostOrCommentForUser, arg.UserID, arg.PostOrCommentID)
+	var i Vote
+	err := row.Scan(
+		&i.ID,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted,
+	)
+	return i, err
+}
+
+const getVotesForPostOrComment = `-- name: GetVotesForPostOrComment :many
+SELECT id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
+FROM votes
+WHERE post_or_comment_id = $1
+  AND is_deleted = false
+LIMIT 1
+`
+
+func (q *Queries) GetVotesForPostOrComment(ctx context.Context, postOrCommentID int64) ([]Vote, error) {
+	rows, err := q.db.QueryContext(ctx, getVotesForPostOrComment, postOrCommentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Vote
+	for rows.Next() {
+		var i Vote
+		if err := rows.Scan(
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setVote = `-- name: SetVote :exec
+UPDATE votes
+set is_up_vote = $1
+where id = $2
+`
+
+type SetVoteParams struct {
+	IsUpVote sql.NullBool
+	ID       int64
+}
+
+func (q *Queries) SetVote(ctx context.Context, arg SetVoteParams) error {
+	_, err := q.db.ExecContext(ctx, setVote, arg.IsUpVote, arg.ID)
+	return err
+}
+
+const upVoteComment = `-- name: UpVoteComment :exec
+UPDATE comments
+SET up_votes = up_votes + 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) UpVoteComment(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, upVoteComment, posterID)
+	return err
+}
+
+const upVotePost = `-- name: UpVotePost :exec
+UPDATE posts
+SET up_votes = up_votes + 1
+WHERE poster_id = $1
+`
+
+func (q *Queries) UpVotePost(ctx context.Context, posterID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, upVotePost, posterID)
+	return err
 }

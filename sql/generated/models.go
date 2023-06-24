@@ -53,6 +53,48 @@ func (ns NullContentType) Value() (driver.Value, error) {
 	return string(ns.ContentType), nil
 }
 
+type VoteType string
+
+const (
+	VoteTypePost    VoteType = "post"
+	VoteTypeComment VoteType = "comment"
+)
+
+func (e *VoteType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VoteType(s)
+	case string:
+		*e = VoteType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VoteType: %T", src)
+	}
+	return nil
+}
+
+type NullVoteType struct {
+	VoteType VoteType
+	Valid    bool // Valid is true if VoteType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVoteType) Scan(value interface{}) error {
+	if value == nil {
+		ns.VoteType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VoteType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVoteType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VoteType), nil
+}
+
 type Comment struct {
 	ID        int64
 	PostID    sql.NullInt64
@@ -62,20 +104,6 @@ type Comment struct {
 	UpVotes   sql.NullInt32
 	DownVotes sql.NullInt32
 	Created   sql.NullTime
-}
-
-type Dislike struct {
-	ID        int64
-	UserID    int64
-	PostID    sql.NullInt64
-	CommentID sql.NullInt64
-}
-
-type Like struct {
-	ID        int64
-	UserID    int64
-	PostID    sql.NullInt64
-	CommentID sql.NullInt64
 }
 
 type Post struct {
@@ -112,4 +140,13 @@ type User struct {
 	DisplayName string
 	Bio         sql.NullString
 	Created     sql.NullTime
+}
+
+type Vote struct {
+	ID              int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted       sql.NullBool
 }

@@ -50,6 +50,12 @@ func main() {
 		Config:     config,
 		Validation: validation,
 	}
+
+	voteService := server.VoteService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
 
@@ -62,17 +68,20 @@ func main() {
 	}))
 
 	// Restricted Routes
+	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 
 	app.Get("/spaces/", spaceService.GetSpaces)
 
 	app.Get("/spaces/:id", spaceService.GetSpaceById)
-
+	//posts
 	app.Post("/posts", postService.CreatePost)
 
 	app.Get("/posts/:id", postService.GetPostById)
 
 	app.Get("/posts/", postService.GetPosts)
+	//votes
+	app.Post("/votes", voteService.CreateVote)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

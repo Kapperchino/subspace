@@ -33,8 +33,8 @@ CREATE TABLE posts
     body         TEXT,
     content_type content_type,
     content      TEXT,
-    up_votes     INTEGER,
-    down_votes   INTEGER
+    up_votes     INTEGER DEFAULT 0,
+    down_votes   INTEGER DEFAULT 0
 );
 
 CREATE TABLE comments
@@ -44,26 +44,20 @@ CREATE TABLE comments
     poster_id  BIGINT REFERENCES users (id),
     parent_id  BIGINT REFERENCES comments (id),
     content    TEXT,
-    up_votes   INTEGER,
-    down_votes INTEGER
+    up_votes   INTEGER DEFAULT 0,
+    down_votes INTEGER DEFAULT 0
 );
 
-CREATE TABLE likes
-(
-    id         BIGSERIAL PRIMARY KEY,
-    user_id    BIGINT REFERENCES users (id) NOT NULL,
-    post_id    BIGINT REFERENCES posts (id),
-    comment_id BIGINT REFERENCES comments (id),
-    CONSTRAINT check_single_source CHECK (num_nonnulls(post_id, comment_id) = 1)
-);
+CREATE TYPE vote_type AS ENUM ('post', 'comment');
 
-CREATE TABLE dislikes
+CREATE TABLE votes
 (
-    id         BIGSERIAL PRIMARY KEY,
-    user_id    BIGINT REFERENCES users (id) NOT NULL,
-    post_id    BIGINT REFERENCES posts (id),
-    comment_id BIGINT REFERENCES comments (id),
-    CONSTRAINT check_single_source CHECK (num_nonnulls(post_id, comment_id) = 1)
+    id                 BIGSERIAL PRIMARY KEY,
+    is_up_vote         BOOLEAN DEFAULT true,
+    user_id            BIGINT REFERENCES users (id) NOT NULL,
+    post_or_comment_id BIGINT                       NOT NULL,
+    vote_type          vote_type                    NOT NULL,
+    is_deleted         BOOLEAN DEFAULT false
 );
 
 CREATE TABLE subscriptions

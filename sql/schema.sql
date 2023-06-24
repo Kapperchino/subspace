@@ -20,6 +20,16 @@ CREATE TYPE public.content_type AS ENUM (
 );
 
 
+--
+-- Name: vote_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.vote_type AS ENUM (
+    'post',
+    'comment'
+);
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -34,8 +44,8 @@ CREATE TABLE public.comments (
     poster_id bigint,
     parent_id bigint,
     content text,
-    up_votes integer,
-    down_votes integer,
+    up_votes integer DEFAULT 0,
+    down_votes integer DEFAULT 0,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -60,70 +70,6 @@ ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
 
 
 --
--- Name: dislikes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.dislikes (
-    id bigint NOT NULL,
-    user_id bigint NOT NULL,
-    post_id bigint,
-    comment_id bigint,
-    CONSTRAINT check_single_source CHECK ((num_nonnulls(post_id, comment_id) = 1))
-);
-
-
---
--- Name: dislikes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.dislikes_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: dislikes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.dislikes_id_seq OWNED BY public.dislikes.id;
-
-
---
--- Name: likes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.likes (
-    id bigint NOT NULL,
-    user_id bigint NOT NULL,
-    post_id bigint,
-    comment_id bigint,
-    CONSTRAINT check_single_source CHECK ((num_nonnulls(post_id, comment_id) = 1))
-);
-
-
---
--- Name: likes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.likes_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: likes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.likes_id_seq OWNED BY public.likes.id;
-
-
---
 -- Name: posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -135,8 +81,8 @@ CREATE TABLE public.posts (
     body text,
     content_type public.content_type,
     content text,
-    up_votes integer,
-    down_votes integer,
+    up_votes integer DEFAULT 0,
+    down_votes integer DEFAULT 0,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -284,24 +230,43 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: votes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.votes (
+    id bigint NOT NULL,
+    is_up_vote boolean DEFAULT true,
+    user_id bigint NOT NULL,
+    post_or_comment_id bigint NOT NULL,
+    vote_type public.vote_type NOT NULL,
+    is_deleted boolean DEFAULT false
+);
+
+
+--
+-- Name: votes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.votes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: votes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.votes_id_seq OWNED BY public.votes.id;
+
+
+--
 -- Name: comments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.comments ALTER COLUMN id SET DEFAULT nextval('public.comments_id_seq'::regclass);
-
-
---
--- Name: dislikes id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dislikes ALTER COLUMN id SET DEFAULT nextval('public.dislikes_id_seq'::regclass);
-
-
---
--- Name: likes id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.likes ALTER COLUMN id SET DEFAULT nextval('public.likes_id_seq'::regclass);
 
 
 --
@@ -340,27 +305,18 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: votes id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.votes ALTER COLUMN id SET DEFAULT nextval('public.votes_id_seq'::regclass);
+
+
+--
 -- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
-
-
---
--- Name: dislikes dislikes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dislikes
-    ADD CONSTRAINT dislikes_pkey PRIMARY KEY (id);
-
-
---
--- Name: likes likes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.likes
-    ADD CONSTRAINT likes_pkey PRIMARY KEY (id);
 
 
 --
@@ -428,6 +384,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: votes votes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.votes
+    ADD CONSTRAINT votes_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: comments comments_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -449,54 +413,6 @@ ALTER TABLE ONLY public.comments
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_poster_id_fkey FOREIGN KEY (poster_id) REFERENCES public.users(id);
-
-
---
--- Name: dislikes dislikes_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dislikes
-    ADD CONSTRAINT dislikes_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(id);
-
-
---
--- Name: dislikes dislikes_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dislikes
-    ADD CONSTRAINT dislikes_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id);
-
-
---
--- Name: dislikes dislikes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dislikes
-    ADD CONSTRAINT dislikes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
-
-
---
--- Name: likes likes_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.likes
-    ADD CONSTRAINT likes_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(id);
-
-
---
--- Name: likes likes_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.likes
-    ADD CONSTRAINT likes_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id);
-
-
---
--- Name: likes likes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.likes
-    ADD CONSTRAINT likes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -537,6 +453,14 @@ ALTER TABLE ONLY public.subscriptions
 
 ALTER TABLE ONLY public.subscriptions
     ADD CONSTRAINT subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: votes votes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.votes
+    ADD CONSTRAINT votes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --

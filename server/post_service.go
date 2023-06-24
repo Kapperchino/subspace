@@ -126,7 +126,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	res, err := queries.GetPostsForSpace(c.Context(), sql.NullInt64{Int64: int64(spaceId), Valid: true})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.Send(nil)
+			return c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)

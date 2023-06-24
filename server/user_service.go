@@ -68,7 +68,13 @@ func (u *UserService) CreateUser(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.JSON(fiber.Map{"token": t})
+	return c.JSON(models.UserMeta{
+		UserID:      user.ID,
+		DisplayName: user.DisplayName,
+		Bio:         user.Bio.String,
+		Token:       t,
+		Email:       user.Email,
+	})
 }
 
 func (u *UserService) Login(c *fiber.Ctx) error {
@@ -109,5 +115,11 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
-	return c.JSON(fiber.Map{"token": t})
+	return c.JSON(models.UserMeta{
+		UserID:      user.ID,
+		DisplayName: user.DisplayName,
+		Bio:         user.Bio.String,
+		Token:       t,
+		Email:       user.Email,
+	})
 }

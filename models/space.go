@@ -1,14 +1,14 @@
 package models
 
 type SpaceCreation struct {
-	Name        string `validate:"required"`
-	Description string `validate:"required"`
-	Parent      int64
+	Name        string `validate:"required" json:"name"`
+	Description string `validate:"required" json:"description"`
+	Parent      int64  `json:"parent"`
 }
 
 type Space struct {
-	ID          int64
-	ParentID    int64
-	Name        string
-	Description string
+	ID          int64  `json:"id"`
+	ParentID    int64  `json:"parent_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }

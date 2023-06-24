@@ -7,6 +7,7 @@ import (
 	"github.com/Kapperchino/subspace/util"
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
+	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +20,10 @@ import (
 
 func main() {
 	config := util.NewConfig()
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		JSONEncoder: json.Marshal,
+		JSONDecoder: json.Unmarshal,
+	})
 	validation := util.NewValidation()
 	u, _ := url.Parse("postgres://subspace-dev:devpassword@localhost/joe?sslmode=disable")
 	dbm := dbmate.New(u)

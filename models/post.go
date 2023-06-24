@@ -3,25 +3,25 @@ package models
 import "time"
 
 type PostCreation struct {
-	SpaceId     int64  `validate:"required"`
-	PosterId    int64  `validate:"required"`
-	Topic       string `validate:"required"`
-	Body        string `validate:"required"`
-	Content     string
-	ContentType ContentType
+	SpaceId     int64       `validate:"required" json:"space_id"`
+	PosterId    int64       `validate:"required" json:"poster_id"`
+	Topic       string      `validate:"required" json:"topic"`
+	Body        string      `validate:"required" json:"body"`
+	Content     string      `json:"content"`
+	ContentType ContentType `json:"content_type"`
 }
 
 type Post struct {
-	Id          int64
-	SpaceId     int64
-	PosterId    int64
-	Topic       string
-	Body        string
-	Content     string
-	ContentType ContentType
-	UpVotes     int64
-	DownVotes   int64
-	Created     time.Time
+	Id          int64       `json:"id"`
+	SpaceId     int64       `json:"space_id"`
+	PosterId    int64       `json:"poster_id"`
+	Topic       string      `json:"topic"`
+	Body        string      `json:"body"`
+	Content     string      `json:"content"`
+	ContentType ContentType `json:"content_type"`
+	UpVotes     int64       `json:"up_votes"`
+	DownVotes   int64       `json:"down_votes"`
+	Created     time.Time   `json:"created"`
 }
 
 type ContentType string

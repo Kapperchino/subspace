@@ -1,13 +1,21 @@
 package models
 
 type UserCreation struct {
-	Password    string `validate:"required"`
-	Email       string `validate:"required,email"`
-	DisplayName string `validate:"required"`
-	Bio         string
+	Password    string `validate:"required" json:"password"`
+	Email       string `validate:"required,email" json:"email"`
+	DisplayName string `validate:"required" json:"display_name"`
+	Bio         string `json:"bio"`
+}
+
+type UserMeta struct {
+	UserID      int64  `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	Bio         string `json:"bio"`
+	Token       string `json:"token"`
+	Email       string `json:"email"`
 }
 
 type Login struct {
-	Password string `validate:"required"`
-	Email    string `validate:"required,email"`
+	Password string `validate:"required" json:"password"`
+	Email    string `validate:"required,email" json:"email"`
 }

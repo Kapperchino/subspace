@@ -77,8 +77,8 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		Topic:       post.Topic,
 		Content:     post.Content.String,
 		ContentType: models.ContentType(post.ContentType.ContentType),
-		UpVotes:     int64(post.UpVotes.Int32),
-		DownVotes:   int64(post.DownVotes.Int32),
+		UpVotes:     0,
+		DownVotes:   0,
 		Created:     post.Created.Time,
 	})
 }
@@ -111,8 +111,8 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		Body:         res.Body.String,
 		ContentType:  models.ContentType(res.ContentType.ContentType),
 		Content:      res.Content.String,
-		UpVotes:      int64(res.UpVotes.Int32),
-		DownVotes:    int64(res.DownVotes.Int32),
+		UpVotes:      res.UpVotes,
+		DownVotes:    res.DownVotes,
 		Created:      res.Created.Time,
 	})
 }
@@ -144,8 +144,8 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 			PosterName:   post.DisplayName,
 			ContentType:  models.ContentType(post.ContentType.ContentType),
 			Body:         post.Body.String,
-			UpVotes:      int64(post.UpVotes.Int32),
-			DownVotes:    int64(post.DownVotes.Int32),
+			UpVotes:      post.UpVotes,
+			DownVotes:    post.DownVotes,
 			Created:      post.Created.Time,
 		})
 	}

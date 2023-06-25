@@ -33,20 +33,16 @@ CREATE TABLE posts
     topic        TEXT NOT NULL,
     body         TEXT,
     content_type content_type,
-    content      TEXT,
-    up_votes     INTEGER DEFAULT 0,
-    down_votes   INTEGER DEFAULT 0
+    content      TEXT
 );
 
 CREATE TABLE comments
 (
-    id         BIGSERIAL PRIMARY KEY,
-    post_id    BIGINT REFERENCES posts (id),
-    poster_id  BIGINT REFERENCES users (id),
-    parent_id  BIGINT REFERENCES comments (id),
-    content    TEXT,
-    up_votes   INTEGER DEFAULT 0,
-    down_votes INTEGER DEFAULT 0
+    id        BIGSERIAL PRIMARY KEY,
+    post_id   BIGINT REFERENCES posts (id),
+    poster_id BIGINT REFERENCES users (id),
+    parent_id BIGINT REFERENCES comments (id),
+    content   TEXT
 );
 
 CREATE TYPE vote_type AS ENUM ('post', 'comment');

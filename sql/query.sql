@@ -48,7 +48,19 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetPost :one
-SELECT p.*, u.display_name, s.picture as space_picture
+SELECT p.*,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
@@ -56,7 +68,19 @@ WHERE p.id = $1
 LIMIT 1;
 
 -- name: GetPostsForSpace :many
-SELECT p.*, u.display_name, s.picture as space_picture
+SELECT p.*,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
@@ -96,43 +120,3 @@ FROM votes
 WHERE post_or_comment_id = $1
   AND is_deleted = false
 LIMIT 1;
-
--- name: UpVotePost :exec
-UPDATE posts
-SET up_votes = up_votes + 1
-WHERE id = $1;
-
--- name: DeUpVotePost :exec
-UPDATE posts
-SET up_votes = up_votes - 1
-WHERE id = $1;
-
--- name: DownVotePost :exec
-UPDATE posts
-SET down_votes = down_votes + 1
-WHERE id = $1;
-
--- name: DeDownVotePost :exec
-UPDATE posts
-SET down_votes = down_votes - 1
-WHERE id = $1;
-
--- name: UpVoteComment :exec
-UPDATE comments
-SET up_votes = up_votes + 1
-WHERE id = $1;
-
--- name: DeUpVoteComment :exec
-UPDATE comments
-SET up_votes = up_votes - 1
-WHERE id = $1;
-
--- name: DownVoteComment :exec
-UPDATE comments
-SET down_votes = down_votes + 1
-WHERE id = $1;
-
--- name: DeDownVoteComment :exec
-UPDATE comments
-SET down_votes = down_votes - 1
-WHERE id = $1;

@@ -13,7 +13,7 @@ import (
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
+RETURNING id, space_id, poster_id, topic, body, content_type, content, created
 `
 
 type CreatePostParams struct {
@@ -43,8 +43,6 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.Body,
 		&i.ContentType,
 		&i.Content,
-		&i.UpVotes,
-		&i.DownVotes,
 		&i.Created,
 	)
 	return i, err
@@ -146,50 +144,6 @@ func (q *Queries) CreateVote(ctx context.Context, arg CreateVoteParams) (Vote, e
 	return i, err
 }
 
-const deDownVoteComment = `-- name: DeDownVoteComment :exec
-UPDATE comments
-SET down_votes = down_votes - 1
-WHERE id = $1
-`
-
-func (q *Queries) DeDownVoteComment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deDownVoteComment, id)
-	return err
-}
-
-const deDownVotePost = `-- name: DeDownVotePost :exec
-UPDATE posts
-SET down_votes = down_votes - 1
-WHERE id = $1
-`
-
-func (q *Queries) DeDownVotePost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deDownVotePost, id)
-	return err
-}
-
-const deUpVoteComment = `-- name: DeUpVoteComment :exec
-UPDATE comments
-SET up_votes = up_votes - 1
-WHERE id = $1
-`
-
-func (q *Queries) DeUpVoteComment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deUpVoteComment, id)
-	return err
-}
-
-const deUpVotePost = `-- name: DeUpVotePost :exec
-UPDATE posts
-SET up_votes = up_votes - 1
-WHERE id = $1
-`
-
-func (q *Queries) DeUpVotePost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deUpVotePost, id)
-	return err
-}
-
 const deleteSpace = `-- name: DeleteSpace :exec
 DELETE
 FROM spaces
@@ -212,30 +166,20 @@ func (q *Queries) DeleteVote(ctx context.Context, id int64) error {
 	return err
 }
 
-const downVoteComment = `-- name: DownVoteComment :exec
-UPDATE comments
-SET down_votes = down_votes + 1
-WHERE id = $1
-`
-
-func (q *Queries) DownVoteComment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, downVoteComment, id)
-	return err
-}
-
-const downVotePost = `-- name: DownVotePost :exec
-UPDATE posts
-SET down_votes = down_votes + 1
-WHERE id = $1
-`
-
-func (q *Queries) DownVotePost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, downVotePost, id)
-	return err
-}
-
 const getPost = `-- name: GetPost :one
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name, s.picture as space_picture
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.created,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
@@ -251,11 +195,11 @@ type GetPostRow struct {
 	Body         sql.NullString
 	ContentType  NullContentType
 	Content      sql.NullString
-	UpVotes      sql.NullInt32
-	DownVotes    sql.NullInt32
 	Created      sql.NullTime
 	DisplayName  string
 	SpacePicture sql.NullString
+	UpVotes      int64
+	DownVotes    int64
 }
 
 func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
@@ -269,17 +213,29 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 		&i.Body,
 		&i.ContentType,
 		&i.Content,
-		&i.UpVotes,
-		&i.DownVotes,
 		&i.Created,
 		&i.DisplayName,
 		&i.SpacePicture,
+		&i.UpVotes,
+		&i.DownVotes,
 	)
 	return i, err
 }
 
 const getPostsForSpace = `-- name: GetPostsForSpace :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name, s.picture as space_picture
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.created,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
@@ -294,11 +250,11 @@ type GetPostsForSpaceRow struct {
 	Body         sql.NullString
 	ContentType  NullContentType
 	Content      sql.NullString
-	UpVotes      sql.NullInt32
-	DownVotes    sql.NullInt32
 	Created      sql.NullTime
 	DisplayName  string
 	SpacePicture sql.NullString
+	UpVotes      int64
+	DownVotes    int64
 }
 
 func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]GetPostsForSpaceRow, error) {
@@ -318,11 +274,11 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 			&i.Body,
 			&i.ContentType,
 			&i.Content,
-			&i.UpVotes,
-			&i.DownVotes,
 			&i.Created,
 			&i.DisplayName,
 			&i.SpacePicture,
+			&i.UpVotes,
+			&i.DownVotes,
 		); err != nil {
 			return nil, err
 		}
@@ -547,27 +503,5 @@ type SetVoteParams struct {
 
 func (q *Queries) SetVote(ctx context.Context, arg SetVoteParams) error {
 	_, err := q.db.ExecContext(ctx, setVote, arg.IsUpVote, arg.ID)
-	return err
-}
-
-const upVoteComment = `-- name: UpVoteComment :exec
-UPDATE comments
-SET up_votes = up_votes + 1
-WHERE id = $1
-`
-
-func (q *Queries) UpVoteComment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, upVoteComment, id)
-	return err
-}
-
-const upVotePost = `-- name: UpVotePost :exec
-UPDATE posts
-SET up_votes = up_votes + 1
-WHERE id = $1
-`
-
-func (q *Queries) UpVotePost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, upVotePost, id)
 	return err
 }

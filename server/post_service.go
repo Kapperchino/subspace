@@ -103,16 +103,17 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Post{
-		Id:          res.ID,
-		SpaceId:     res.SpaceID.Int64,
-		PosterId:    res.PosterID.Int64,
-		Topic:       res.Topic,
-		Body:        res.Body.String,
-		ContentType: models.ContentType(res.ContentType.ContentType),
-		Content:     res.Content.String,
-		UpVotes:     int64(res.UpVotes.Int32),
-		DownVotes:   int64(res.DownVotes.Int32),
-		Created:     res.Created.Time,
+		Id:           res.ID,
+		SpaceId:      res.SpaceID.Int64,
+		PosterId:     res.PosterID.Int64,
+		SpacePicture: res.SpacePicture.String,
+		Topic:        res.Topic,
+		Body:         res.Body.String,
+		ContentType:  models.ContentType(res.ContentType.ContentType),
+		Content:      res.Content.String,
+		UpVotes:      int64(res.UpVotes.Int32),
+		DownVotes:    int64(res.DownVotes.Int32),
+		Created:      res.Created.Time,
 	})
 }
 
@@ -134,17 +135,18 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	var list []models.Post
 	for _, post := range res {
 		list = append(list, models.Post{
-			Id:          post.ID,
-			SpaceId:     post.SpaceID.Int64,
-			PosterId:    post.PosterID.Int64,
-			Topic:       post.Topic,
-			Content:     post.Content.String,
-			PosterName:  post.DisplayName,
-			ContentType: models.ContentType(post.ContentType.ContentType),
-			Body:        post.Body.String,
-			UpVotes:     int64(post.UpVotes.Int32),
-			DownVotes:   int64(post.DownVotes.Int32),
-			Created:     post.Created.Time,
+			Id:           post.ID,
+			SpaceId:      post.SpaceID.Int64,
+			PosterId:     post.PosterID.Int64,
+			SpacePicture: post.SpacePicture.String,
+			Topic:        post.Topic,
+			Content:      post.Content.String,
+			PosterName:   post.DisplayName,
+			ContentType:  models.ContentType(post.ContentType.ContentType),
+			Body:         post.Body.String,
+			UpVotes:      int64(post.UpVotes.Int32),
+			DownVotes:    int64(post.DownVotes.Int32),
+			Created:      post.Created.Time,
 		})
 	}
 	return c.JSON(list)

@@ -41,8 +41,9 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	space, err := queries.CreateSpace(c.Context(), gen.CreateSpaceParams{
 		Name:        req.Name,
-		Description: sql.NullString{String: req.Description, Valid: true},
+		Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
 		ParentID:    req.Parent,
+		Picture:     sql.NullString{String: req.Picture, Valid: req.Picture != ""},
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -52,6 +53,7 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 		ID:          space.ID,
 		ParentID:    space.ParentID,
 		Name:        space.Name,
+		Picture:     space.Picture.String,
 		Description: space.Description.String,
 	})
 }
@@ -76,6 +78,7 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 		ID:          res.ID,
 		ParentID:    res.ParentID,
 		Name:        res.Name,
+		Picture:     res.Picture.String,
 		Description: res.Description.String,
 	})
 }
@@ -102,6 +105,7 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 			spaces = append(spaces, models.Space{
 				ID:          space.ID,
 				ParentID:    space.ParentID,
+				Picture:     space.Picture.String,
 				Name:        space.Name,
 				Description: space.Description.String,
 			})
@@ -121,6 +125,7 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		ID:          res.ID,
 		ParentID:    res.ParentID,
 		Name:        res.Name,
+		Picture:     res.Picture.String,
 		Description: res.Description.String,
 	})
 }

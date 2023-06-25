@@ -4,6 +4,7 @@ type SpaceCreation struct {
 	Name        string `validate:"required" json:"name"`
 	Description string `validate:"required" json:"description"`
 	Parent      int64  `json:"parent"`
+	Picture     string `json:"picture"`
 }
 
 type Space struct {
@@ -11,4 +12,5 @@ type Space struct {
 	ParentID    int64  `json:"parent_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Picture     string `json:"picture"`
 }

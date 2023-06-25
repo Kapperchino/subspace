@@ -4,7 +4,8 @@ CREATE TABLE spaces
     id          BIGSERIAL PRIMARY KEY,
     parent_id   BIGSERIAL NOT NULL,
     name        TEXT      NOT NULL,
-    description TEXT
+    description TEXT,
+    picture     TEXT
 );
 
 INSERT INTO spaces (name, description, parent_id)

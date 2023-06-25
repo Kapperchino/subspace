@@ -124,6 +124,7 @@ CREATE TABLE public.spaces (
     parent_id bigint NOT NULL,
     name text NOT NULL,
     description text,
+    picture text,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 

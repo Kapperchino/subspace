@@ -124,6 +124,7 @@ type Space struct {
 	ParentID    int64
 	Name        string
 	Description sql.NullString
+	Picture     sql.NullString
 	Created     sql.NullTime
 }
 

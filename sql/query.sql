@@ -16,8 +16,8 @@ WHERE name = $1
 LIMIT 1;
 
 -- name: CreateSpace :one
-INSERT INTO spaces (name, description, parent_id)
-VALUES ($1, $2, $3)
+INSERT INTO spaces (name, description, parent_id, picture)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: DeleteSpace :exec
@@ -48,15 +48,18 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetPost :one
-SELECT *
-FROM posts
-WHERE id = $1
+SELECT p.*, u.display_name, s.picture as space_picture
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+WHERE p.id = $1
 LIMIT 1;
 
 -- name: GetPostsForSpace :many
-SELECT p.*, u.display_name
+SELECT p.*, u.display_name, s.picture as space_picture
 FROM posts p
          join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
 WHERE space_id = $1;
 
 -- name: CreateVote :one

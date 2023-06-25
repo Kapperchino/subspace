@@ -51,25 +51,32 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 }
 
 const createSpace = `-- name: CreateSpace :one
-INSERT INTO spaces (name, description, parent_id)
-VALUES ($1, $2, $3)
-RETURNING id, parent_id, name, description, created
+INSERT INTO spaces (name, description, parent_id, picture)
+VALUES ($1, $2, $3, $4)
+RETURNING id, parent_id, name, description, picture, created
 `
 
 type CreateSpaceParams struct {
 	Name        string
 	Description sql.NullString
 	ParentID    int64
+	Picture     sql.NullString
 }
 
 func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space, error) {
-	row := q.db.QueryRowContext(ctx, createSpace, arg.Name, arg.Description, arg.ParentID)
+	row := q.db.QueryRowContext(ctx, createSpace,
+		arg.Name,
+		arg.Description,
+		arg.ParentID,
+		arg.Picture,
+	)
 	var i Space
 	err := row.Scan(
 		&i.ID,
 		&i.ParentID,
 		&i.Name,
 		&i.Description,
+		&i.Picture,
 		&i.Created,
 	)
 	return i, err
@@ -228,15 +235,32 @@ func (q *Queries) DownVotePost(ctx context.Context, posterID sql.NullInt64) erro
 }
 
 const getPost = `-- name: GetPost :one
-SELECT id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
-FROM posts
-WHERE id = $1
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name, s.picture as space_picture
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+WHERE p.id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
+type GetPostRow struct {
+	ID           int64
+	SpaceID      sql.NullInt64
+	PosterID     sql.NullInt64
+	Topic        string
+	Body         sql.NullString
+	ContentType  NullContentType
+	Content      sql.NullString
+	UpVotes      sql.NullInt32
+	DownVotes    sql.NullInt32
+	Created      sql.NullTime
+	DisplayName  string
+	SpacePicture sql.NullString
+}
+
+func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 	row := q.db.QueryRowContext(ctx, getPost, id)
-	var i Post
+	var i GetPostRow
 	err := row.Scan(
 		&i.ID,
 		&i.SpaceID,
@@ -248,29 +272,33 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 		&i.UpVotes,
 		&i.DownVotes,
 		&i.Created,
+		&i.DisplayName,
+		&i.SpacePicture,
 	)
 	return i, err
 }
 
 const getPostsForSpace = `-- name: GetPostsForSpace :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name, s.picture as space_picture
 FROM posts p
          join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
 WHERE space_id = $1
 `
 
 type GetPostsForSpaceRow struct {
-	ID          int64
-	SpaceID     sql.NullInt64
-	PosterID    sql.NullInt64
-	Topic       string
-	Body        sql.NullString
-	ContentType NullContentType
-	Content     sql.NullString
-	UpVotes     sql.NullInt32
-	DownVotes   sql.NullInt32
-	Created     sql.NullTime
-	DisplayName string
+	ID           int64
+	SpaceID      sql.NullInt64
+	PosterID     sql.NullInt64
+	Topic        string
+	Body         sql.NullString
+	ContentType  NullContentType
+	Content      sql.NullString
+	UpVotes      sql.NullInt32
+	DownVotes    sql.NullInt32
+	Created      sql.NullTime
+	DisplayName  string
+	SpacePicture sql.NullString
 }
 
 func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]GetPostsForSpaceRow, error) {
@@ -294,6 +322,7 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 			&i.DownVotes,
 			&i.Created,
 			&i.DisplayName,
+			&i.SpacePicture,
 		); err != nil {
 			return nil, err
 		}
@@ -309,7 +338,7 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT id, parent_id, name, description, created
+SELECT id, parent_id, name, description, picture, created
 FROM spaces
 WHERE id = $1
 LIMIT 1
@@ -323,13 +352,14 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (Space, error) {
 		&i.ParentID,
 		&i.Name,
 		&i.Description,
+		&i.Picture,
 		&i.Created,
 	)
 	return i, err
 }
 
 const getSpaceByName = `-- name: GetSpaceByName :one
-SELECT id, parent_id, name, description, created
+SELECT id, parent_id, name, description, picture, created
 FROM spaces
 WHERE name = $1
 LIMIT 1
@@ -343,13 +373,14 @@ func (q *Queries) GetSpaceByName(ctx context.Context, name string) (Space, error
 		&i.ParentID,
 		&i.Name,
 		&i.Description,
+		&i.Picture,
 		&i.Created,
 	)
 	return i, err
 }
 
 const getSpacesOfParent = `-- name: GetSpacesOfParent :many
-SELECT id, parent_id, name, description, created
+SELECT id, parent_id, name, description, picture, created
 FROM spaces
 WHERE parent_id = $1
 `
@@ -368,6 +399,7 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Spac
 			&i.ParentID,
 			&i.Name,
 			&i.Description,
+			&i.Picture,
 			&i.Created,
 		); err != nil {
 			return nil, err

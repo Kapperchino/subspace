@@ -149,44 +149,44 @@ func (q *Queries) CreateVote(ctx context.Context, arg CreateVoteParams) (Vote, e
 const deDownVoteComment = `-- name: DeDownVoteComment :exec
 UPDATE comments
 SET down_votes = down_votes - 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DeDownVoteComment(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, deDownVoteComment, posterID)
+func (q *Queries) DeDownVoteComment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deDownVoteComment, id)
 	return err
 }
 
 const deDownVotePost = `-- name: DeDownVotePost :exec
 UPDATE posts
 SET down_votes = down_votes - 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DeDownVotePost(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, deDownVotePost, posterID)
+func (q *Queries) DeDownVotePost(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deDownVotePost, id)
 	return err
 }
 
 const deUpVoteComment = `-- name: DeUpVoteComment :exec
 UPDATE comments
 SET up_votes = up_votes - 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DeUpVoteComment(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, deUpVoteComment, posterID)
+func (q *Queries) DeUpVoteComment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deUpVoteComment, id)
 	return err
 }
 
 const deUpVotePost = `-- name: DeUpVotePost :exec
 UPDATE posts
 SET up_votes = up_votes - 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DeUpVotePost(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, deUpVotePost, posterID)
+func (q *Queries) DeUpVotePost(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deUpVotePost, id)
 	return err
 }
 
@@ -215,22 +215,22 @@ func (q *Queries) DeleteVote(ctx context.Context, id int64) error {
 const downVoteComment = `-- name: DownVoteComment :exec
 UPDATE comments
 SET down_votes = down_votes + 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DownVoteComment(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, downVoteComment, posterID)
+func (q *Queries) DownVoteComment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, downVoteComment, id)
 	return err
 }
 
 const downVotePost = `-- name: DownVotePost :exec
 UPDATE posts
 SET down_votes = down_votes + 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) DownVotePost(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, downVotePost, posterID)
+func (q *Queries) DownVotePost(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, downVotePost, id)
 	return err
 }
 
@@ -462,7 +462,6 @@ SELECT id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
 FROM votes
 WHERE user_id = $1
   AND post_or_comment_id = $2
-  AND is_deleted = false
 LIMIT 1
 `
 
@@ -523,9 +522,21 @@ func (q *Queries) GetVotesForPostOrComment(ctx context.Context, postOrCommentID 
 	return items, nil
 }
 
+const refreshVote = `-- name: RefreshVote :exec
+UPDATE votes
+set is_deleted = false
+where id = $1
+`
+
+func (q *Queries) RefreshVote(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, refreshVote, id)
+	return err
+}
+
 const setVote = `-- name: SetVote :exec
 UPDATE votes
-set is_up_vote = $1
+set is_up_vote = $1,
+    is_deleted = false
 where id = $2
 `
 
@@ -542,21 +553,21 @@ func (q *Queries) SetVote(ctx context.Context, arg SetVoteParams) error {
 const upVoteComment = `-- name: UpVoteComment :exec
 UPDATE comments
 SET up_votes = up_votes + 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) UpVoteComment(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, upVoteComment, posterID)
+func (q *Queries) UpVoteComment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, upVoteComment, id)
 	return err
 }
 
 const upVotePost = `-- name: UpVotePost :exec
 UPDATE posts
 SET up_votes = up_votes + 1
-WHERE poster_id = $1
+WHERE id = $1
 `
 
-func (q *Queries) UpVotePost(ctx context.Context, posterID sql.NullInt64) error {
-	_, err := q.db.ExecContext(ctx, upVotePost, posterID)
+func (q *Queries) UpVotePost(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, upVotePost, id)
 	return err
 }

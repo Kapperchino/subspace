@@ -58,6 +58,7 @@ func (u *VoteService) CreateVote(c *fiber.Ctx) error {
 	rowExists := err == nil
 	//row exists
 	if rowExists {
+		//changing vote
 		if vote.IsUpVote.Bool != req.IsUpVote {
 			err := queries.SetVote(c.Context(), gen.SetVoteParams{
 				IsUpVote: sql.NullBool{Bool: req.IsUpVote, Valid: true},
@@ -69,65 +70,67 @@ func (u *VoteService) CreateVote(c *fiber.Ctx) error {
 			}
 			if req.IsUpVote {
 				//changing from downVote to upVote
-				if req.VoteType == models.VOTE_POST {
-					err = queries.DeDownVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				} else {
-					err = queries.DeDownVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				}
+				err = u.deDownVoteCommentOrPost(c, req, queries)
 				if err != nil {
 					log.Error().Err(err).Msg("Error creating transaction")
 					return c.SendStatus(fiber.StatusInternalServerError)
 				}
 				//upvote the counter
-				if req.VoteType == models.VOTE_POST {
-					err = queries.UpVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				} else {
-					err = queries.UpVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				}
+				err := u.upvoteCommentOrPost(c, req, queries)
 				if err != nil {
 					log.Error().Err(err).Msg("Error creating transaction")
 					return c.SendStatus(fiber.StatusInternalServerError)
 				}
 			} else {
 				//changing from upvote to downvote
-				if req.VoteType == models.VOTE_POST {
-					err = queries.DeUpVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				} else {
-					err = queries.DeUpVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				}
+				err := u.deUpvoteCommentOrPost(c, req, queries)
 				if err != nil {
 					log.Error().Err(err).Msg("Error creating transaction")
 					return c.SendStatus(fiber.StatusInternalServerError)
 				}
 				//downVote the counter
-				if req.VoteType == models.VOTE_POST {
-					err = queries.DownVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				} else {
-					err = queries.DownVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-				}
+				err = u.downVoteCommentOrPost(c, req, queries)
 				if err != nil {
 					log.Error().Err(err).Msg("Error creating transaction")
 					return c.SendStatus(fiber.StatusInternalServerError)
 				}
 			}
-		}
-	} else {
-		if req.IsUpVote {
-			if req.VoteType == models.VOTE_POST {
-				err = queries.UpVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
+		} else if !vote.IsDeleted.Bool {
+			//unliking or undisliking a vote
+			if vote.IsUpVote.Bool {
+				err := u.deUpvoteCommentOrPost(c, req, queries)
+				if err != nil {
+					log.Error().Err(err).Msg("Error creating transaction")
+					return c.SendStatus(fiber.StatusInternalServerError)
+				}
 			} else {
-				err = queries.UpVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
+				err := u.deDownVoteCommentOrPost(c, req, queries)
+				if err != nil {
+					log.Error().Err(err).Msg("Error creating transaction")
+					return c.SendStatus(fiber.StatusInternalServerError)
+				}
 			}
+			err := queries.DeleteVote(c.Context(), vote.ID)
 			if err != nil {
 				log.Error().Err(err).Msg("Error creating transaction")
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		} else {
-			if req.VoteType == models.VOTE_POST {
-				err = queries.DownVotePost(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
-			} else {
-				err = queries.DownVoteComment(c.Context(), sql.NullInt64{Int64: req.PostOrCommentId, Valid: true})
+			err := queries.RefreshVote(c.Context(), vote.ID)
+			if err != nil {
+				log.Error().Err(err).Msg("Error creating transaction")
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
+		}
+	} else {
+		if req.IsUpVote {
+			err := u.upvoteCommentOrPost(c, req, queries)
+			if err != nil {
+				log.Error().Err(err).Msg("Error creating transaction")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+		} else {
+			err := u.downVoteCommentOrPost(c, req, queries)
 			if err != nil {
 				log.Error().Err(err).Msg("Error creating transaction")
 				return c.SendStatus(fiber.StatusInternalServerError)
@@ -162,4 +165,60 @@ func (u *VoteService) CreateVote(c *fiber.Ctx) error {
 		VoteType:        models.VoteType(vote.VoteType),
 		IsUpVote:        req.IsUpVote,
 	})
+}
+
+func (u *VoteService) upvoteCommentOrPost(c *fiber.Ctx, req *models.VoteCreation, queries *gen.Queries) error {
+	var err error
+	if req.VoteType == models.VOTE_POST {
+		err = queries.UpVotePost(c.Context(), req.PostOrCommentId)
+	} else {
+		err = queries.UpVoteComment(c.Context(), req.PostOrCommentId)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return err
+	}
+	return nil
+}
+
+func (u *VoteService) deUpvoteCommentOrPost(c *fiber.Ctx, req *models.VoteCreation, queries *gen.Queries) error {
+	var err error
+	if req.VoteType == models.VOTE_POST {
+		err = queries.DeUpVotePost(c.Context(), req.PostOrCommentId)
+	} else {
+		err = queries.DeUpVoteComment(c.Context(), req.PostOrCommentId)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return err
+	}
+	return nil
+}
+
+func (u *VoteService) deDownVoteCommentOrPost(c *fiber.Ctx, req *models.VoteCreation, queries *gen.Queries) error {
+	var err error
+	if req.VoteType == models.VOTE_POST {
+		err = queries.DeDownVotePost(c.Context(), req.PostOrCommentId)
+	} else {
+		err = queries.DeDownVoteComment(c.Context(), req.PostOrCommentId)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return err
+	}
+	return nil
+}
+
+func (u *VoteService) downVoteCommentOrPost(c *fiber.Ctx, req *models.VoteCreation, queries *gen.Queries) error {
+	var err error
+	if req.VoteType == models.VOTE_POST {
+		err = queries.DownVotePost(c.Context(), req.PostOrCommentId)
+	} else {
+		err = queries.DownVoteComment(c.Context(), req.PostOrCommentId)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return err
+	}
+	return nil
 }

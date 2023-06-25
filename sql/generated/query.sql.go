@@ -253,20 +253,35 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 }
 
 const getPostsForSpace = `-- name: GetPostsForSpace :many
-SELECT id, space_id, poster_id, topic, body, content_type, content, up_votes, down_votes, created
-FROM posts
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.up_votes, p.down_votes, p.created, u.display_name
+FROM posts p
+         join users u on p.poster_id = u.id
 WHERE space_id = $1
 `
 
-func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]Post, error) {
+type GetPostsForSpaceRow struct {
+	ID          int64
+	SpaceID     sql.NullInt64
+	PosterID    sql.NullInt64
+	Topic       string
+	Body        sql.NullString
+	ContentType NullContentType
+	Content     sql.NullString
+	UpVotes     sql.NullInt32
+	DownVotes   sql.NullInt32
+	Created     sql.NullTime
+	DisplayName string
+}
+
+func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]GetPostsForSpaceRow, error) {
 	rows, err := q.db.QueryContext(ctx, getPostsForSpace, spaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Post
+	var items []GetPostsForSpaceRow
 	for rows.Next() {
-		var i Post
+		var i GetPostsForSpaceRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpaceID,
@@ -278,6 +293,7 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 			&i.UpVotes,
 			&i.DownVotes,
 			&i.Created,
+			&i.DisplayName,
 		); err != nil {
 			return nil, err
 		}

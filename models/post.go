@@ -15,6 +15,7 @@ type Post struct {
 	Id          int64       `json:"id"`
 	SpaceId     int64       `json:"space_id"`
 	PosterId    int64       `json:"poster_id"`
+	PosterName  string      `json:"poster_name"`
 	Topic       string      `json:"topic"`
 	Body        string      `json:"body"`
 	Content     string      `json:"content"`

@@ -54,8 +54,9 @@ WHERE id = $1
 LIMIT 1;
 
 -- name: GetPostsForSpace :many
-SELECT *
-FROM posts
+SELECT p.*, u.display_name
+FROM posts p
+         join users u on p.poster_id = u.id
 WHERE space_id = $1;
 
 -- name: CreateVote :one

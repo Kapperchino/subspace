@@ -139,6 +139,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 			PosterId:    post.PosterID.Int64,
 			Topic:       post.Topic,
 			Content:     post.Content.String,
+			PosterName:  post.DisplayName,
 			ContentType: models.ContentType(post.ContentType.ContentType),
 			Body:        post.Body.String,
 			UpVotes:     int64(post.UpVotes.Int32),

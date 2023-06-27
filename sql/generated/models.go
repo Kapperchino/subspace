@@ -96,12 +96,15 @@ func (ns NullVoteType) Value() (driver.Value, error) {
 }
 
 type Comment struct {
-	ID       int64
-	PostID   sql.NullInt64
-	PosterID sql.NullInt64
-	ParentID sql.NullInt64
-	Content  sql.NullString
-	Created  sql.NullTime
+	ID          int64
+	PostID      sql.NullInt64
+	PosterID    sql.NullInt64
+	ParentID    sql.NullInt64
+	Body        string
+	ContentType NullContentType
+	Content     sql.NullString
+	IsDeleted   sql.NullBool
+	Created     sql.NullTime
 }
 
 type Post struct {
@@ -112,6 +115,7 @@ type Post struct {
 	Body        sql.NullString
 	ContentType NullContentType
 	Content     sql.NullString
+	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 }
 
@@ -121,6 +125,7 @@ type Space struct {
 	Name        string
 	Description sql.NullString
 	Picture     sql.NullString
+	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 }
 
@@ -136,6 +141,7 @@ type User struct {
 	Email       string
 	DisplayName string
 	Bio         sql.NullString
+	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 }
 

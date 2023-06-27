@@ -43,9 +43,10 @@ CREATE TABLE public.comments (
     post_id bigint,
     poster_id bigint,
     parent_id bigint,
+    body text NOT NULL,
+    content_type public.content_type,
     content text,
-    up_votes integer DEFAULT 0,
-    down_votes integer DEFAULT 0,
+    is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -81,8 +82,7 @@ CREATE TABLE public.posts (
     body text,
     content_type public.content_type,
     content text,
-    up_votes integer DEFAULT 0,
-    down_votes integer DEFAULT 0,
+    is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -125,6 +125,7 @@ CREATE TABLE public.spaces (
     name text NOT NULL,
     description text,
     picture text,
+    is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -207,6 +208,7 @@ CREATE TABLE public.users (
     email text NOT NULL,
     display_name text NOT NULL,
     bio text,
+    is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -345,6 +347,14 @@ ALTER TABLE ONLY public.spaces
 
 
 --
+-- Name: spaces spaces_parent_id_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.spaces
+    ADD CONSTRAINT spaces_parent_id_name_key UNIQUE (parent_id, name);
+
+
+--
 -- Name: spaces spaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -366,6 +376,14 @@ ALTER TABLE ONLY public.subscriptions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_display_name_key UNIQUE (display_name);
+
+
+--
+-- Name: users users_display_name_key1; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_display_name_key1 UNIQUE (display_name);
 
 
 --
@@ -393,14 +411,6 @@ ALTER TABLE ONLY public.votes
 
 
 --
--- Name: comments comments_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.comments
-    ADD CONSTRAINT comments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.comments(id);
-
-
---
 -- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -414,6 +424,14 @@ ALTER TABLE ONLY public.comments
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_poster_id_fkey FOREIGN KEY (poster_id) REFERENCES public.users(id);
+
+
+--
+-- Name: comments comments_self_ref; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_self_ref FOREIGN KEY (parent_id) REFERENCES public.comments(id);
 
 
 --

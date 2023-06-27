@@ -10,10 +10,47 @@ import (
 	"database/sql"
 )
 
+const createComment = `-- name: CreateComment :one
+INSERT INTO comments (parent_id, poster_id, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, post_id, poster_id, parent_id, body, content_type, content, is_deleted, created
+`
+
+type CreateCommentParams struct {
+	ParentID    sql.NullInt64
+	PosterID    sql.NullInt64
+	Body        string
+	Content     sql.NullString
+	ContentType NullContentType
+}
+
+func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error) {
+	row := q.db.QueryRowContext(ctx, createComment,
+		arg.ParentID,
+		arg.PosterID,
+		arg.Body,
+		arg.Content,
+		arg.ContentType,
+	)
+	var i Comment
+	err := row.Scan(
+		&i.ID,
+		&i.PostID,
+		&i.PosterID,
+		&i.ParentID,
+		&i.Body,
+		&i.ContentType,
+		&i.Content,
+		&i.IsDeleted,
+		&i.Created,
+	)
+	return i, err
+}
+
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, space_id, poster_id, topic, body, content_type, content, created
+RETURNING id, space_id, poster_id, topic, body, content_type, content, is_deleted, created
 `
 
 type CreatePostParams struct {
@@ -43,6 +80,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.Body,
 		&i.ContentType,
 		&i.Content,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
@@ -51,7 +89,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 const createSpace = `-- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, picture)
 VALUES ($1, $2, $3, $4)
-RETURNING id, parent_id, name, description, picture, created
+RETURNING id, parent_id, name, description, picture, is_deleted, created
 `
 
 type CreateSpaceParams struct {
@@ -75,6 +113,7 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space
 		&i.Name,
 		&i.Description,
 		&i.Picture,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
@@ -83,7 +122,7 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
-RETURNING id, password, email, display_name, bio, created
+RETURNING id, password, email, display_name, bio, is_deleted, created
 `
 
 type CreateUserParams struct {
@@ -107,6 +146,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
@@ -166,8 +206,320 @@ func (q *Queries) DeleteVote(ctx context.Context, id int64) error {
 	return err
 }
 
+const getComment = `-- name: GetComment :one
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+       u.display_name,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM comments c
+         join users u on c.poster_id = u.id
+where c.id = $1
+`
+
+type GetCommentRow struct {
+	ID          int64
+	PostID      sql.NullInt64
+	PosterID    sql.NullInt64
+	ParentID    sql.NullInt64
+	Body        string
+	ContentType NullContentType
+	Content     sql.NullString
+	IsDeleted   sql.NullBool
+	Created     sql.NullTime
+	DisplayName string
+	UpVotes     int64
+	DownVotes   int64
+}
+
+func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, error) {
+	row := q.db.QueryRowContext(ctx, getComment, id)
+	var i GetCommentRow
+	err := row.Scan(
+		&i.ID,
+		&i.PostID,
+		&i.PosterID,
+		&i.ParentID,
+		&i.Body,
+		&i.ContentType,
+		&i.Content,
+		&i.IsDeleted,
+		&i.Created,
+		&i.DisplayName,
+		&i.UpVotes,
+		&i.DownVotes,
+	)
+	return i, err
+}
+
+const getCommentsForComment = `-- name: GetCommentsForComment :many
+WITH RECURSIVE allCommentsForComment AS (
+    -- base case starting from grandfather
+    SELECT id,
+           post_id,
+           poster_id,
+           parent_id,
+           body,
+           content_type,
+           content,
+           is_deleted,
+           created
+    FROM comments c
+    WHERE c.id = $1 AND c.id != 1
+    UNION
+    --- recursive query (note it adds to the partial table "x")
+    SELECT c.id,
+           c.post_id,
+           c.poster_id,
+           c.parent_id,
+           c.body,
+           c.content_type,
+           c.content,
+           c.is_deleted,
+           c.created
+    FROM comments c
+             INNER JOIN allCommentsForComment c1
+                        ON c.parent_id = c1.id)
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+       u.display_name,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM allCommentsForComment c
+         join users u on c.poster_id = u.id
+`
+
+type GetCommentsForCommentRow struct {
+	ID          int64
+	PostID      sql.NullInt64
+	PosterID    sql.NullInt64
+	ParentID    sql.NullInt64
+	Body        string
+	ContentType NullContentType
+	Content     sql.NullString
+	IsDeleted   sql.NullBool
+	Created     sql.NullTime
+	DisplayName string
+	UpVotes     int64
+	DownVotes   int64
+}
+
+func (q *Queries) GetCommentsForComment(ctx context.Context, id int64) ([]GetCommentsForCommentRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForComment, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommentsForCommentRow
+	for rows.Next() {
+		var i GetCommentsForCommentRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.PosterID,
+			&i.ParentID,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.UpVotes,
+			&i.DownVotes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCommentsForPost = `-- name: GetCommentsForPost :many
+WITH RECURSIVE allCommentsForPost AS (
+    -- base case starting from grandfather
+    SELECT id,
+           post_id,
+           poster_id,
+           parent_id,
+           body,
+           content_type,
+           content,
+           is_deleted,
+           created
+    FROM comments c
+    WHERE c.post_id = $1 AND c.id != 1
+    UNION
+    --- recursive query (note it adds to the partial table "x")
+    SELECT c.id,
+           c.post_id,
+           c.poster_id,
+           c.parent_id,
+           c.body,
+           c.content_type,
+           c.content,
+           c.is_deleted,
+           c.created
+    FROM comments c
+             INNER JOIN allCommentsForPost c1
+                        ON c.parent_id = c1.id)
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+       u.display_name,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM allCommentsForPost c
+         join users u on c.poster_id = u.id
+`
+
+type GetCommentsForPostRow struct {
+	ID          int64
+	PostID      sql.NullInt64
+	PosterID    sql.NullInt64
+	ParentID    sql.NullInt64
+	Body        string
+	ContentType NullContentType
+	Content     sql.NullString
+	IsDeleted   sql.NullBool
+	Created     sql.NullTime
+	DisplayName string
+	UpVotes     int64
+	DownVotes   int64
+}
+
+func (q *Queries) GetCommentsForPost(ctx context.Context, postID sql.NullInt64) ([]GetCommentsForPostRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForPost, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommentsForPostRow
+	for rows.Next() {
+		var i GetCommentsForPostRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.PosterID,
+			&i.ParentID,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.UpVotes,
+			&i.DownVotes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCommentsForUser = `-- name: GetCommentsForUser :many
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+       u.display_name,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM comments c
+         join users u on c.poster_id = u.id
+where u.id = $1
+`
+
+type GetCommentsForUserRow struct {
+	ID          int64
+	PostID      sql.NullInt64
+	PosterID    sql.NullInt64
+	ParentID    sql.NullInt64
+	Body        string
+	ContentType NullContentType
+	Content     sql.NullString
+	IsDeleted   sql.NullBool
+	Created     sql.NullTime
+	DisplayName string
+	UpVotes     int64
+	DownVotes   int64
+}
+
+func (q *Queries) GetCommentsForUser(ctx context.Context, id int64) ([]GetCommentsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForUser, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommentsForUserRow
+	for rows.Next() {
+		var i GetCommentsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.PosterID,
+			&i.ParentID,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.UpVotes,
+			&i.DownVotes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPost = `-- name: GetPost :one
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
        u.display_name,
        s.picture                    as space_picture,
        (SELECT COUNT(id)
@@ -195,6 +547,7 @@ type GetPostRow struct {
 	Body         sql.NullString
 	ContentType  NullContentType
 	Content      sql.NullString
+	IsDeleted    sql.NullBool
 	Created      sql.NullTime
 	DisplayName  string
 	SpacePicture sql.NullString
@@ -213,6 +566,7 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 		&i.Body,
 		&i.ContentType,
 		&i.Content,
+		&i.IsDeleted,
 		&i.Created,
 		&i.DisplayName,
 		&i.SpacePicture,
@@ -223,7 +577,7 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 }
 
 const getPostsForSpace = `-- name: GetPostsForSpace :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
        u.display_name,
        s.picture                    as space_picture,
        (SELECT COUNT(id)
@@ -250,6 +604,7 @@ type GetPostsForSpaceRow struct {
 	Body         sql.NullString
 	ContentType  NullContentType
 	Content      sql.NullString
+	IsDeleted    sql.NullBool
 	Created      sql.NullTime
 	DisplayName  string
 	SpacePicture sql.NullString
@@ -274,6 +629,7 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 			&i.Body,
 			&i.ContentType,
 			&i.Content,
+			&i.IsDeleted,
 			&i.Created,
 			&i.DisplayName,
 			&i.SpacePicture,
@@ -294,7 +650,7 @@ func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) (
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT id, parent_id, name, description, picture, created
+SELECT id, parent_id, name, description, picture, is_deleted, created
 FROM spaces
 WHERE id = $1
 LIMIT 1
@@ -309,20 +665,27 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (Space, error) {
 		&i.Name,
 		&i.Description,
 		&i.Picture,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
 }
 
 const getSpaceByName = `-- name: GetSpaceByName :one
-SELECT id, parent_id, name, description, picture, created
+SELECT id, parent_id, name, description, picture, is_deleted, created
 FROM spaces
 WHERE name = $1
+  AND parent_id = $2
 LIMIT 1
 `
 
-func (q *Queries) GetSpaceByName(ctx context.Context, name string) (Space, error) {
-	row := q.db.QueryRowContext(ctx, getSpaceByName, name)
+type GetSpaceByNameParams struct {
+	Name     string
+	ParentID int64
+}
+
+func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) (Space, error) {
+	row := q.db.QueryRowContext(ctx, getSpaceByName, arg.Name, arg.ParentID)
 	var i Space
 	err := row.Scan(
 		&i.ID,
@@ -330,13 +693,14 @@ func (q *Queries) GetSpaceByName(ctx context.Context, name string) (Space, error
 		&i.Name,
 		&i.Description,
 		&i.Picture,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
 }
 
 const getSpacesOfParent = `-- name: GetSpacesOfParent :many
-SELECT id, parent_id, name, description, picture, created
+SELECT id, parent_id, name, description, picture, is_deleted, created
 FROM spaces
 WHERE parent_id = $1
 `
@@ -356,6 +720,7 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Spac
 			&i.Name,
 			&i.Description,
 			&i.Picture,
+			&i.IsDeleted,
 			&i.Created,
 		); err != nil {
 			return nil, err
@@ -372,7 +737,7 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Spac
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, password, email, display_name, bio, created
+SELECT id, password, email, display_name, bio, is_deleted, created
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -387,13 +752,14 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT id, password, email, display_name, bio, created
+SELECT id, password, email, display_name, bio, is_deleted, created
 FROM users
 WHERE email = $1
 LIMIT 1
@@ -408,6 +774,7 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.Email,
 		&i.DisplayName,
 		&i.Bio,
+		&i.IsDeleted,
 		&i.Created,
 	)
 	return i, err

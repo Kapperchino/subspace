@@ -85,12 +85,12 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 
 func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 	name := c.Query("name")
+	parentId := c.QueryInt("parentId")
+	// get all spaces
+	if parentId == 0 {
+		parentId = 1
+	}
 	if name == "" {
-		parentId := c.QueryInt("parentId")
-		// get all spaces
-		if parentId == 0 {
-			parentId = 1
-		}
 		queries := gen.New(u.getDB())
 		res, err := queries.GetSpacesOfParent(c.Context(), int64(parentId))
 		if err != nil {
@@ -113,7 +113,10 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		return c.JSON(spaces)
 	}
 	queries := gen.New(u.getDB())
-	res, err := queries.GetSpaceByName(c.Context(), name)
+	res, err := queries.GetSpaceByName(c.Context(), gen.GetSpaceByNameParams{
+		Name:     name,
+		ParentID: int64(parentId),
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Send(nil)

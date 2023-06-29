@@ -97,8 +97,8 @@ func (ns NullVoteType) Value() (driver.Value, error) {
 
 type Comment struct {
 	ID          int64
-	PostID      sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType

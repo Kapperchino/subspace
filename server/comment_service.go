@@ -47,12 +47,9 @@ func (u *CommentService) CreateComment(c *fiber.Ctx) error {
 			Int64: req.ParentId,
 			Valid: true,
 		},
-		PosterID: sql.NullInt64{
-			Int64: req.PosterId,
-			Valid: true,
-		},
-		Body: req.Body,
-
+		PosterID: req.PosterId,
+		PostID:   req.PostId,
+		Body:     req.Body,
 		Content: sql.NullString{
 			String: req.Content,
 			Valid:  true,
@@ -68,8 +65,9 @@ func (u *CommentService) CreateComment(c *fiber.Ctx) error {
 	}
 	return c.JSON(models.Comment{
 		Id:          comment.ID,
-		PosterId:    comment.PosterID.Int64,
+		PosterId:    comment.PosterID,
 		ParentId:    comment.ParentID.Int64,
+		PostId:      comment.PostID,
 		Body:        comment.Body,
 		Content:     comment.Content.String,
 		ContentType: models.ContentType(comment.ContentType.ContentType),
@@ -100,7 +98,7 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 	}
 	return c.JSON(models.Comment{
 		Id:          res.ID,
-		PosterId:    res.PosterID.Int64,
+		PosterId:    res.PosterID,
 		Body:        res.Body,
 		ParentId:    res.ParentID.Int64,
 		ContentType: models.ContentType(res.ContentType.ContentType),
@@ -121,10 +119,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 	if postId != -1 {
-		res, err := queries.GetCommentsForPost(c.Context(), sql.NullInt64{
-			Int64: int64(postId),
-			Valid: true,
-		})
+		res, err := queries.GetCommentsForPost(c.Context(), int64(postId))
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return c.SendStatus(fiber.StatusOK)
@@ -136,7 +131,8 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		for _, comment := range res {
 			list = append(list, models.Comment{
 				Id:          comment.ID,
-				PosterId:    comment.PosterID.Int64,
+				PosterId:    comment.PosterID,
+				PostId:      comment.PostID,
 				ParentId:    comment.ParentID.Int64,
 				Body:        comment.Body,
 				Content:     comment.Content.String,
@@ -160,7 +156,8 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	for _, comment := range res {
 		list = append(list, models.Comment{
 			Id:          comment.ID,
-			PosterId:    comment.PosterID.Int64,
+			PosterId:    comment.PosterID,
+			PostId:      comment.PostID,
 			ParentId:    comment.ParentID.Int64,
 			Body:        comment.Body,
 			Content:     comment.Content.String,

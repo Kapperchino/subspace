@@ -49,8 +49,8 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: CreateComment :one
-INSERT INTO comments (parent_id, poster_id, body, content, content_type)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO comments (parent_id, post_id, poster_id, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetPost :one
@@ -90,7 +90,8 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-WHERE space_id = $1;
+WHERE space_id = $1
+  AND p.id != 1;
 
 -- name: GetCommentsForPost :many
 WITH RECURSIVE allCommentsForPost AS (
@@ -149,7 +150,8 @@ WITH RECURSIVE allCommentsForComment AS (
            is_deleted,
            created
     FROM comments c
-    WHERE c.id = $1 AND c.id != 1
+    WHERE c.id = $1
+      AND c.id != 1
     UNION
     --- recursive query (note it adds to the partial table "x")
     SELECT c.id,

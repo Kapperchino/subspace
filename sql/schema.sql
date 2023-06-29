@@ -44,7 +44,7 @@ CREATE TABLE public.comments (
     poster_id bigint,
     parent_id bigint,
     body text NOT NULL,
-    content_type public.content_type,
+    content_type public.content_type DEFAULT 'text'::public.content_type,
     content text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
@@ -80,7 +80,7 @@ CREATE TABLE public.posts (
     poster_id bigint,
     topic text NOT NULL,
     body text,
-    content_type public.content_type,
+    content_type public.content_type DEFAULT 'text'::public.content_type,
     content text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP

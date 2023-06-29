@@ -11,14 +11,15 @@ import (
 )
 
 const createComment = `-- name: CreateComment :one
-INSERT INTO comments (parent_id, poster_id, body, content, content_type)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO comments (parent_id, post_id, poster_id, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, post_id, poster_id, parent_id, body, content_type, content, is_deleted, created
 `
 
 type CreateCommentParams struct {
 	ParentID    sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	Body        string
 	Content     sql.NullString
 	ContentType NullContentType
@@ -27,6 +28,7 @@ type CreateCommentParams struct {
 func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error) {
 	row := q.db.QueryRowContext(ctx, createComment,
 		arg.ParentID,
+		arg.PostID,
 		arg.PosterID,
 		arg.Body,
 		arg.Content,
@@ -226,8 +228,8 @@ where c.id = $1
 
 type GetCommentRow struct {
 	ID          int64
-	PostID      sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType
@@ -272,7 +274,8 @@ WITH RECURSIVE allCommentsForComment AS (
            is_deleted,
            created
     FROM comments c
-    WHERE c.id = $1 AND c.id != 1
+    WHERE c.id = $1
+      AND c.id != 1
     UNION
     --- recursive query (note it adds to the partial table "x")
     SELECT c.id,
@@ -305,8 +308,8 @@ FROM allCommentsForComment c
 
 type GetCommentsForCommentRow struct {
 	ID          int64
-	PostID      sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType
@@ -367,7 +370,7 @@ WITH RECURSIVE allCommentsForPost AS (
            is_deleted,
            created
     FROM comments c
-    WHERE c.post_id = $1 AND c.id != 1
+    WHERE c.post_id = $1
     UNION
     --- recursive query (note it adds to the partial table "x")
     SELECT c.id,
@@ -400,8 +403,8 @@ FROM allCommentsForPost c
 
 type GetCommentsForPostRow struct {
 	ID          int64
-	PostID      sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType
@@ -413,7 +416,7 @@ type GetCommentsForPostRow struct {
 	DownVotes   int64
 }
 
-func (q *Queries) GetCommentsForPost(ctx context.Context, postID sql.NullInt64) ([]GetCommentsForPostRow, error) {
+func (q *Queries) GetCommentsForPost(ctx context.Context, postID int64) ([]GetCommentsForPostRow, error) {
 	rows, err := q.db.QueryContext(ctx, getCommentsForPost, postID)
 	if err != nil {
 		return nil, err
@@ -469,8 +472,8 @@ where u.id = $1
 
 type GetCommentsForUserRow struct {
 	ID          int64
-	PostID      sql.NullInt64
-	PosterID    sql.NullInt64
+	PostID      int64
+	PosterID    int64
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType
@@ -594,6 +597,7 @@ FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
 WHERE space_id = $1
+  AND p.id != 1
 `
 
 type GetPostsForSpaceRow struct {

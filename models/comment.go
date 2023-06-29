@@ -5,6 +5,7 @@ import "time"
 type CommentCreation struct {
 	PosterId    int64       `validate:"required" json:"poster_id"`
 	ParentId    int64       `json:"parent_id"`
+	PostId      int64       `validate:"required" json:"post_id"`
 	Body        string      `validate:"required" json:"body"`
 	Content     string      `json:"content"`
 	ContentType ContentType `json:"content_type"`
@@ -13,6 +14,7 @@ type CommentCreation struct {
 type Comment struct {
 	Id          int64       `json:"id"`
 	PosterId    int64       `json:"poster_id"`
+	PostId      int64       `json:"post_id"`
 	ParentId    int64       `json:"parent_id"`
 	PosterName  string      `json:"poster_name"`
 	Body        string      `json:"body"`

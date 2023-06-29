@@ -38,9 +38,9 @@ CREATE TABLE posts
     poster_id    BIGINT REFERENCES users (id),
     topic        TEXT NOT NULL,
     body         TEXT,
-    content_type content_type,
+    content_type content_type DEFAULT 'text',
     content      TEXT,
-    is_deleted   BOOLEAN DEFAULT false
+    is_deleted   BOOLEAN      DEFAULT false
 );
 
 INSERT INTO posts (space_id, poster_id, topic)
@@ -49,13 +49,13 @@ VALUES (1, 1, 'rootPost');
 CREATE TABLE comments
 (
     id           BIGSERIAL PRIMARY KEY,
-    post_id      BIGINT REFERENCES posts (id),
-    poster_id    BIGINT REFERENCES users (id),
+    post_id      BIGINT REFERENCES posts (id) NOT NULL,
+    poster_id    BIGINT REFERENCES users (id) NOT NULL,
     parent_id    BIGINT,
-    body         TEXT NOT NULL,
-    content_type content_type,
+    body         TEXT                         NOT NULL,
+    content_type content_type DEFAULT 'text',
     content      TEXT,
-    is_deleted   BOOLEAN DEFAULT false
+    is_deleted   BOOLEAN      DEFAULT false
 );
 
 INSERT INTO comments(post_id, poster_id, parent_id, body)

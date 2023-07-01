@@ -272,7 +272,8 @@ WITH RECURSIVE allCommentsForComment AS (
            content_type,
            content,
            is_deleted,
-           created
+           created,
+           0 AS level
     FROM comments c
     WHERE c.id = $1
       AND c.id != 1
@@ -286,11 +287,13 @@ WITH RECURSIVE allCommentsForComment AS (
            c.content_type,
            c.content,
            c.is_deleted,
-           c.created
+           c.created,
+           c1.level + 1
     FROM comments c
              INNER JOIN allCommentsForComment c1
-                        ON c.parent_id = c1.id)
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+                        ON c.parent_id = c1.id
+    WHERE c1.level < 3)
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created, c.level,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -316,6 +319,7 @@ type GetCommentsForCommentRow struct {
 	Content     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Level       int32
 	DisplayName string
 	UpVotes     int64
 	DownVotes   int64
@@ -340,6 +344,7 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, id int64) ([]GetCom
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Level,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
@@ -368,7 +373,8 @@ WITH RECURSIVE allCommentsForPost AS (
            content_type,
            content,
            is_deleted,
-           created
+           created,
+           0 AS level
     FROM comments c
     WHERE c.post_id = $1
     UNION
@@ -381,11 +387,13 @@ WITH RECURSIVE allCommentsForPost AS (
            c.content_type,
            c.content,
            c.is_deleted,
-           c.created
+           c.created,
+           c1.level + 1
     FROM comments c
              INNER JOIN allCommentsForPost c1
-                        ON c.parent_id = c1.id)
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created,
+                        ON c.parent_id = c1.id
+    WHERE c1.level < 3)
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.content, c.is_deleted, c.created, c.level,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -411,6 +419,7 @@ type GetCommentsForPostRow struct {
 	Content     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Level       int32
 	DisplayName string
 	UpVotes     int64
 	DownVotes   int64
@@ -435,6 +444,7 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, postID int64) ([]GetCo
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Level,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,

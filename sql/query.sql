@@ -104,7 +104,8 @@ WITH RECURSIVE allCommentsForPost AS (
            content_type,
            content,
            is_deleted,
-           created
+           created,
+           0 AS level
     FROM comments c
     WHERE c.post_id = $1
     UNION
@@ -117,10 +118,12 @@ WITH RECURSIVE allCommentsForPost AS (
            c.content_type,
            c.content,
            c.is_deleted,
-           c.created
+           c.created,
+           c1.level + 1
     FROM comments c
              INNER JOIN allCommentsForPost c1
-                        ON c.parent_id = c1.id)
+                        ON c.parent_id = c1.id
+    WHERE c1.level < 3)
 SELECT c.*,
        u.display_name,
        (SELECT COUNT(id)
@@ -148,7 +151,8 @@ WITH RECURSIVE allCommentsForComment AS (
            content_type,
            content,
            is_deleted,
-           created
+           created,
+           0 AS level
     FROM comments c
     WHERE c.id = $1
       AND c.id != 1
@@ -162,10 +166,12 @@ WITH RECURSIVE allCommentsForComment AS (
            c.content_type,
            c.content,
            c.is_deleted,
-           c.created
+           c.created,
+           c1.level + 1
     FROM comments c
              INNER JOIN allCommentsForComment c1
-                        ON c.parent_id = c1.id)
+                        ON c.parent_id = c1.id
+    WHERE c1.level < 3)
 SELECT c.*,
        u.display_name,
        (SELECT COUNT(id)

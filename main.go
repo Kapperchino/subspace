@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/Kapperchino/subspace/server"
 	"github.com/Kapperchino/subspace/util"
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
@@ -11,7 +10,6 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -102,11 +100,4 @@ func main() {
 	app.Get("/comments/", commentService.GetComments)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
-}
-
-func restricted(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	id := claims["exp"].(float64)
-	return c.SendString("Welcome " + fmt.Sprintf("%f", id))
 }

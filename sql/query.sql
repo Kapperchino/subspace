@@ -93,6 +93,26 @@ FROM posts p
 WHERE space_id = $1
   AND p.id != 1;
 
+-- name: GetPostsForUser :many
+SELECT p.*,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+WHERE p.poster_id = $1
+  AND p.id != 1;
+
 -- name: GetCommentsForPost :many
 WITH RECURSIVE allCommentsForPost AS (
     -- base case starting from grandfather

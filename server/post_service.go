@@ -120,11 +120,43 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 
 func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	spaceId := c.QueryInt("spaceId", -1)
+	userId := c.QueryInt("userId", -1)
+	if spaceId != -1 && userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
 	//TODO:get post by popularity
 	if spaceId == -1 {
 		spaceId = 1
 	}
 	queries := gen.New(u.getDB())
+	if userId != -1 {
+		res, err := queries.GetPostsForUser(c.Context(), sql.NullInt64{Int64: int64(userId), Valid: true})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			list = append(list, models.Post{
+				Id:           post.ID,
+				SpaceId:      post.SpaceID.Int64,
+				PosterId:     post.PosterID.Int64,
+				SpacePicture: post.SpacePicture.String,
+				Topic:        post.Topic,
+				Content:      post.Content.String,
+				PosterName:   post.DisplayName,
+				ContentType:  models.ContentType(post.ContentType.ContentType),
+				Body:         post.Body.String,
+				UpVotes:      post.UpVotes,
+				DownVotes:    post.DownVotes,
+				Created:      post.Created.Time,
+			})
+		}
+		return c.JSON(list)
+	}
 	res, err := queries.GetPostsForSpace(c.Context(), sql.NullInt64{Int64: int64(spaceId), Valid: true})
 	if err != nil {
 		if err == sql.ErrNoRows {

@@ -15,6 +15,12 @@ type UserMeta struct {
 	Email       string `json:"email"`
 }
 
+type UserInfo struct {
+	UserID      int64  `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	Bio         string `json:"bio"`
+}
+
 type Login struct {
 	Password string `validate:"required" json:"password"`
 	Email    string `validate:"required,email" json:"email"`

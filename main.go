@@ -88,6 +88,8 @@ func main() {
 	}))
 
 	// Restricted Routes
+	//user
+	app.Get("/users/:id", userService.GetUserById)
 	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 

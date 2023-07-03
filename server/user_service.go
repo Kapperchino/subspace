@@ -123,3 +123,29 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 		Email:       user.Email,
 	})
 }
+
+func (u *UserService) GetUserById(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id", -1)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	res, err := queries.GetUser(c.Context(), int64(id))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Send(nil)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	return c.JSON(models.UserInfo{
+		UserID:      res.ID,
+		DisplayName: res.DisplayName,
+		Bio:         res.Bio.String,
+	})
+}

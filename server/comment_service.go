@@ -134,6 +134,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 				PosterId:    comment.PosterID,
 				PostId:      comment.PostID,
 				ParentId:    comment.ParentID.Int64,
+				PosterName:  comment.DisplayName,
 				Body:        comment.Body,
 				Content:     comment.Content.String,
 				ContentType: models.ContentType(comment.ContentType.ContentType),

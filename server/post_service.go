@@ -106,6 +106,7 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		Id:           res.ID,
 		SpaceId:      res.SpaceID.Int64,
 		PosterId:     res.PosterID.Int64,
+		PosterName:   res.DisplayName,
 		SpacePicture: res.SpacePicture.String,
 		Topic:        res.Topic,
 		Body:         res.Body.String,

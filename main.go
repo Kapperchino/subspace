@@ -14,7 +14,9 @@ import (
 	_ "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/url"
+	"reflect"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -24,6 +26,14 @@ func main() {
 		JSONDecoder: json.Unmarshal,
 	})
 	validation := util.NewValidation()
+	validation.Validate.RegisterTagNameFunc(func(field reflect.StructField) string {
+		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
+		// skip if tag key says it should be ignored
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
 	u, _ := url.Parse("postgres://subspace-dev:devpassword@localhost/joe?sslmode=disable")
 	dbm := dbmate.New(u)
 	dbm.SchemaFile = "./sql/schema.sql"

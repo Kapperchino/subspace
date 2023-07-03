@@ -9,12 +9,12 @@ import (
 )
 
 type Validation struct {
-	validate *validator.Validate
+	Validate *validator.Validate
 }
 
 func (v Validation) ValidateStruct(input any) error {
 	// returns nil or ValidationErrors ( []FieldError )
-	err := v.validate.Struct(input)
+	err := v.Validate.Struct(input)
 	var msgs string
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
@@ -28,7 +28,7 @@ func (v Validation) ValidateStruct(input any) error {
 
 func NewValidation() *Validation {
 	validate := validator.New()
-	return &Validation{validate: validate}
+	return &Validation{Validate: validate}
 }
 
 func HashAndSalt(pwd []byte) string {

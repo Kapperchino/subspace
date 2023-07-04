@@ -34,7 +34,7 @@ func main() {
 		}
 		return name
 	})
-	u, _ := url.Parse("postgres://subspace-dev:devpassword@localhost/joe?sslmode=disable")
+	u, _ := url.Parse(config.DatabaseUrl)
 	dbm := dbmate.New(u)
 	dbm.SchemaFile = "./sql/schema.sql"
 	dbm.MigrationsDir = []string{"./sql/migrations"}

@@ -42,7 +42,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with migration")
 	}
-	db, err := sql.Open("pgx", "postgres://subspace-dev:devpassword@localhost/joe?sslmode=disable")
+	db, err := sql.Open("pgx", config.DatabaseUrl)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to db")
 	}

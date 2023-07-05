@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for subspace-alpha on 2023-07-04T13:24:21-04:00
+# fly.toml app configuration file generated for subspace-backend on 2023-07-05T11:59:05-04:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "subspace-alpha"
+app = "subspace-backend"
 primary_region = "iad"
 
 [env]

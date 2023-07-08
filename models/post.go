@@ -32,4 +32,5 @@ const (
 	CONTENT_VIDEO   ContentType = "video"
 	CONTENT_TEXT                = "text"
 	CONTENT_PICTURE             = "picture"
+	CONTENT_LINK                = "link"
 )

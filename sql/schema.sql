@@ -16,7 +16,8 @@ SET row_security = off;
 CREATE TYPE public.content_type AS ENUM (
     'video',
     'picture',
-    'text'
+    'text',
+    'link'
 );
 
 
@@ -493,4 +494,5 @@ ALTER TABLE ONLY public.votes
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20230622214053'),
-    ('20230623164659');
+    ('20230623164659'),
+    ('20230708182438');

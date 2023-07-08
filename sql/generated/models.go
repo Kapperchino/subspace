@@ -16,6 +16,7 @@ const (
 	ContentTypeVideo   ContentType = "video"
 	ContentTypePicture ContentType = "picture"
 	ContentTypeText    ContentType = "text"
+	ContentTypeLink    ContentType = "link"
 )
 
 func (e *ContentType) Scan(src interface{}) error {

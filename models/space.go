@@ -1,8 +1,8 @@
 package models
 
 type SpaceCreation struct {
-	Name        string `validate:"required" json:"name"`
-	Description string `validate:"required" json:"description"`
+	Name        string `validate:"required,max=5000" json:"name"`
+	Description string `validate:"required,max=60000" json:"description"`
 	Parent      int64  `json:"parent"`
 	Picture     string `json:"picture"`
 }

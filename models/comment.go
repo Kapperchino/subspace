@@ -6,8 +6,8 @@ type CommentCreation struct {
 	PosterId    int64       `validate:"required" json:"poster_id"`
 	ParentId    int64       `json:"parent_id"`
 	PostId      int64       `validate:"required" json:"post_id"`
-	Body        string      `validate:"required" json:"body"`
-	Content     string      `json:"content"`
+	Body        string      `validate:"required,max=40000" json:"body"`
+	Content     string      `json:"content,max=10000"`
 	ContentType ContentType `json:"content_type"`
 }
 

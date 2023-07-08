@@ -3,7 +3,7 @@ package models
 type UserCreation struct {
 	Password    string `validate:"required" json:"password"`
 	Email       string `validate:"required,email" json:"email"`
-	DisplayName string `validate:"required" json:"display_name"`
+	DisplayName string `validate:"required,max=400" json:"display_name"`
 	Bio         string `json:"bio"`
 }
 

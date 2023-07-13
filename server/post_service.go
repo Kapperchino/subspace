@@ -10,9 +10,10 @@ import (
 )
 
 type PostService struct {
-	DB         *sql.DB
-	Config     *util.Config
-	Validation *util.Validation
+	DB           *sql.DB
+	Config       *util.Config
+	Validation   *util.Validation
+	UploadClient *util.UploadClient
 }
 
 func (u *PostService) getDB() *sql.DB {
@@ -42,6 +43,11 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if req.ContentType == "" {
 		req.ContentType = models.CONTENT_TEXT
 	}
+	presigned, fileName, err := u.getPresigned(req.IsUpload, c)
+	var content = ""
+	if presigned != "" {
+		content = "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+	}
 	post, err := queries.CreatePost(c.Context(), gen.CreatePostParams{
 		SpaceID: sql.NullInt64{
 			Int64: req.SpaceId,
@@ -57,8 +63,8 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 			Valid:  true,
 		},
 		Content: sql.NullString{
-			String: req.Content,
-			Valid:  req.Content != "",
+			String: content,
+			Valid:  content != "",
 		},
 		ContentType: gen.NullContentType{
 			ContentType: gen.ContentType(req.ContentType),
@@ -76,6 +82,8 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		Body:        post.Body.String,
 		Topic:       post.Topic,
 		Content:     post.Content.String,
+		IsUpload:    req.IsUpload,
+		Presigned:   presigned,
 		ContentType: models.ContentType(post.ContentType.ContentType),
 		UpVotes:     0,
 		DownVotes:   0,
@@ -183,4 +191,13 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(list)
+}
+
+func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string, error) {
+	if !isUpload {
+		return "", "", nil
+	}
+	preSigned, key, err := u.UploadClient.Presign(c.Context())
+
+	return preSigned.URL, key, err
 }

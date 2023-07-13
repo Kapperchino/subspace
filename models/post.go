@@ -7,6 +7,7 @@ type PostCreation struct {
 	PosterId    int64       `validate:"required" json:"poster_id"`
 	Topic       string      `validate:"required,max=6000" json:"topic"`
 	Body        string      `validate:"required,max=60000" json:"body"`
+	IsUpload    bool        `json:"is_upload"`
 	Content     string      `json:"content"`
 	ContentType ContentType `json:"content_type"`
 }
@@ -20,6 +21,8 @@ type Post struct {
 	Topic        string      `json:"topic"`
 	Body         string      `json:"body"`
 	Content      string      `json:"content"`
+	IsUpload     bool        `json:"is_upload"`
+	Presigned    string      `json:"presigned"`
 	ContentType  ContentType `json:"content_type"`
 	UpVotes      int64       `json:"up_votes"`
 	DownVotes    int64       `json:"down_votes"`

@@ -46,6 +46,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to db")
 	}
+	uploadClient, err := util.NewUploadClient(config.BucketName, config.BucketAccountId, config.BucketKeyId, config.BucketKeySecret)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error with connection to objectStore")
+	}
 	userService := server.UserService{
 		DB:         db,
 		Config:     config,
@@ -59,9 +63,10 @@ func main() {
 	}
 
 	postService := server.PostService{
-		DB:         db,
-		Config:     config,
-		Validation: validation,
+		DB:           db,
+		Config:       config,
+		Validation:   validation,
+		UploadClient: uploadClient,
 	}
 
 	voteService := server.VoteService{

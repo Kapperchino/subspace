@@ -47,6 +47,8 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	var content = ""
 	if presigned != "" {
 		content = "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+	} else {
+		content = req.Content
 	}
 	post, err := queries.CreatePost(c.Context(), gen.CreatePostParams{
 		SpaceID: sql.NullInt64{

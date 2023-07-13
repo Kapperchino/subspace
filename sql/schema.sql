@@ -41,8 +41,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.comments (
     id bigint NOT NULL,
-    post_id bigint,
-    poster_id bigint,
+    post_id bigint NOT NULL,
+    poster_id bigint NOT NULL,
     parent_id bigint,
     body text NOT NULL,
     content_type public.content_type DEFAULT 'text'::public.content_type,

@@ -589,7 +589,7 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 	return i, err
 }
 
-const getPostsForSpace = `-- name: GetPostsForSpace :many
+const getPostsForSpaceLatest = `-- name: GetPostsForSpaceLatest :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
        u.display_name,
        s.picture                    as space_picture,
@@ -608,9 +608,16 @@ FROM posts p
          join spaces s on s.id = p.space_id
 WHERE space_id = $1
   AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY p.created DESC
 `
 
-type GetPostsForSpaceRow struct {
+type GetPostsForSpaceLatestParams struct {
+	SpaceID sql.NullInt64
+	Days    int32
+}
+
+type GetPostsForSpaceLatestRow struct {
 	ID           int64
 	SpaceID      sql.NullInt64
 	PosterID     sql.NullInt64
@@ -626,15 +633,96 @@ type GetPostsForSpaceRow struct {
 	DownVotes    int64
 }
 
-func (q *Queries) GetPostsForSpace(ctx context.Context, spaceID sql.NullInt64) ([]GetPostsForSpaceRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForSpace, spaceID)
+func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpaceLatestParams) ([]GetPostsForSpaceLatestRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatest, arg.SpaceID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPostsForSpaceRow
+	var items []GetPostsForSpaceLatestRow
 	for rows.Next() {
-		var i GetPostsForSpaceRow
+		var i GetPostsForSpaceLatestRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceID,
+			&i.PosterID,
+			&i.Topic,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.SpacePicture,
+			&i.UpVotes,
+			&i.DownVotes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsForSpacePopular = `-- name: GetPostsForSpacePopular :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+WHERE space_id = $1
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY up_votes DESC
+`
+
+type GetPostsForSpacePopularParams struct {
+	SpaceID sql.NullInt64
+	Days    int32
+}
+
+type GetPostsForSpacePopularRow struct {
+	ID           int64
+	SpaceID      sql.NullInt64
+	PosterID     sql.NullInt64
+	Topic        string
+	Body         sql.NullString
+	ContentType  NullContentType
+	Content      sql.NullString
+	IsDeleted    sql.NullBool
+	Created      sql.NullTime
+	DisplayName  string
+	SpacePicture sql.NullString
+	UpVotes      int64
+	DownVotes    int64
+}
+
+func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSpacePopularParams) ([]GetPostsForSpacePopularRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopular, arg.SpaceID, arg.Days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsForSpacePopularRow
+	for rows.Next() {
+		var i GetPostsForSpacePopularRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpaceID,

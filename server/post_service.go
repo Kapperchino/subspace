@@ -131,7 +131,15 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	spaceId := c.QueryInt("spaceId", -1)
 	userId := c.QueryInt("userId", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
 	if spaceId != -1 && userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if sort != "latest" && sort != "popular" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if days > 365 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	//TODO:get post by popularity
@@ -167,13 +175,70 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 		}
 		return c.JSON(list)
 	}
-	res, err := queries.GetPostsForSpace(c.Context(), sql.NullInt64{Int64: int64(spaceId), Valid: true})
+	list, err := u.getPosts(int64(spaceId), sort == "popular", int32(days), queries, c)
+	if err != nil {
+		return err
+	}
+	return c.JSON(list)
+}
+
+func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string, error) {
+	if !isUpload {
+		return "", "", nil
+	}
+	preSigned, key, err := u.UploadClient.Presign(c.Context())
+
+	return preSigned.URL, key, err
+}
+
+func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if !isPopular {
+		res, err := queries.GetPostsForSpaceLatest(c.Context(), gen.GetPostsForSpaceLatestParams{
+			SpaceID: sql.NullInt64{
+				Int64: spaceId,
+				Valid: true,
+			},
+			Days: days,
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			list = append(list, models.Post{
+				Id:           post.ID,
+				SpaceId:      post.SpaceID.Int64,
+				PosterId:     post.PosterID.Int64,
+				SpacePicture: post.SpacePicture.String,
+				Topic:        post.Topic,
+				Content:      post.Content.String,
+				PosterName:   post.DisplayName,
+				ContentType:  models.ContentType(post.ContentType.ContentType),
+				Body:         post.Body.String,
+				UpVotes:      post.UpVotes,
+				DownVotes:    post.DownVotes,
+				Created:      post.Created.Time,
+			})
+		}
+		return list, nil
+	}
+	res, err := queries.GetPostsForSpacePopular(c.Context(), gen.GetPostsForSpacePopularParams{
+		SpaceID: sql.NullInt64{
+			Int64: spaceId,
+			Valid: true,
+		},
+		Days: days,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusOK)
+			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
-		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	var list []models.Post
 	for _, post := range res {
@@ -192,14 +257,5 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 			Created:      post.Created.Time,
 		})
 	}
-	return c.JSON(list)
-}
-
-func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string, error) {
-	if !isUpload {
-		return "", "", nil
-	}
-	preSigned, key, err := u.UploadClient.Presign(c.Context())
-
-	return preSigned.URL, key, err
+	return list, nil
 }

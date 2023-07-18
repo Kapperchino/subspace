@@ -308,7 +308,7 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id
 `
 
 type GetCommentsForCommentParams struct {
@@ -426,7 +426,7 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
           AND v.is_up_vote = false) AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForPost c
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id
          join users u on c.poster_id = u.id
 `
 
@@ -659,7 +659,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -755,7 +755,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -851,7 +851,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1
+         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id
 WHERE p.poster_id = $1
   AND p.id != 1
 `

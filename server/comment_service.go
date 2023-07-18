@@ -112,6 +112,11 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	postId := c.QueryInt("postId", -1)
 	commentId := c.QueryInt("commentId", -1)
+	userId := c.QueryInt("userId", -1)
+	if userId == -1 {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("userId is required")
+	}
 	//TODO:get comment by popularity
 	if postId == -1 && commentId == -1 {
 		return c.Status(fiber.StatusBadRequest).
@@ -119,7 +124,10 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 	if postId != -1 {
-		res, err := queries.GetCommentsForPost(c.Context(), int64(postId))
+		res, err := queries.GetCommentsForPost(c.Context(), gen.GetCommentsForPostParams{
+			PostID: int64(postId),
+			UserID: int64(userId),
+		})
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return c.SendStatus(fiber.StatusOK)
@@ -130,11 +138,11 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		var list []models.Comment
 		for _, comment := range res {
 			vote := models.Vote{
-				VoteId:          comment.ID_2,
-				UserId:          comment.UserID,
-				PostOrCommentId: comment.PostOrCommentID,
+				VoteId:          comment.ID_2.Int64,
+				UserId:          comment.UserID.Int64,
+				PostOrCommentId: comment.PostOrCommentID.Int64,
 				IsUpVote:        comment.IsUpVote.Bool,
-				VoteType:        models.VoteType(comment.VoteType),
+				VoteType:        models.VoteType(comment.VoteType.VoteType),
 				IsDeleted:       comment.IsDeleted_2.Bool,
 			}
 			list = append(list, models.Comment{
@@ -154,7 +162,10 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		}
 		return c.JSON(list)
 	}
-	res, err := queries.GetCommentsForComment(c.Context(), int64(commentId))
+	res, err := queries.GetCommentsForComment(c.Context(), gen.GetCommentsForCommentParams{
+		ID:     int64(commentId),
+		UserID: int64(userId),
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.SendStatus(fiber.StatusOK)
@@ -165,11 +176,11 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	var list []models.Comment
 	for _, comment := range res {
 		vote := models.Vote{
-			VoteId:          comment.ID_2,
-			UserId:          comment.UserID,
-			PostOrCommentId: comment.PostOrCommentID,
+			VoteId:          comment.ID_2.Int64,
+			UserId:          comment.UserID.Int64,
+			PostOrCommentId: comment.PostOrCommentID.Int64,
 			IsUpVote:        comment.IsUpVote.Bool,
-			VoteType:        models.VoteType(comment.VoteType),
+			VoteType:        models.VoteType(comment.VoteType.VoteType),
 			IsDeleted:       comment.IsDeleted_2.Bool,
 		}
 		list = append(list, models.Comment{

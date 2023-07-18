@@ -27,7 +27,7 @@ type Post struct {
 	UpVotes      int64       `json:"up_votes"`
 	DownVotes    int64       `json:"down_votes"`
 	Created      time.Time   `json:"created"`
-	Vote         Vote        `json:"vote"`
+	Vote         *Vote       `json:"vote"`
 }
 
 type ContentType string

@@ -133,7 +133,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	userId := c.QueryInt("userId", -1)
 	sort := c.Query("sort", "latest")
 	days := c.QueryInt("days", 7)
-	if spaceId != -1 && userId == -1 {
+	if spaceId != -1 || userId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	if sort != "latest" && sort != "popular" {
@@ -142,49 +142,13 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	if days > 365 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	//TODO:get post by popularity
+	//TODO:getPostsForUser move to a different endpoint
 	if spaceId == -1 {
 		spaceId = 1
 	}
 	queries := gen.New(u.getDB())
-	if userId != -1 {
-		res, err := queries.GetPostsForUser(c.Context(), sql.NullInt64{Int64: int64(userId), Valid: true})
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.SendStatus(fiber.StatusOK)
-			}
-			log.Error().Err(err).Msg("Error while creating using in db")
-			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
-		}
-		var list []models.Post
-		for _, post := range res {
-			vote := models.Vote{
-				VoteId:          post.ID_2,
-				UserId:          post.UserID,
-				PostOrCommentId: post.PostOrCommentID,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
-			}
-			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName,
-				ContentType:  models.ContentType(post.ContentType.ContentType),
-				Body:         post.Body.String,
-				UpVotes:      post.UpVotes,
-				DownVotes:    post.DownVotes,
-				Created:      post.Created.Time,
-				Vote:         vote,
-			})
-		}
-		return c.JSON(list)
-	}
-	list, err := u.getPosts(int64(spaceId), sort == "popular", int32(days), queries, c)
+
+	list, err := u.getPosts(int64(userId), int64(spaceId), sort == "popular", int32(days), queries, c)
 	if err != nil {
 		return err
 	}
@@ -200,14 +164,15 @@ func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string,
 	return preSigned.URL, key, err
 }
 
-func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForSpaceLatest(c.Context(), gen.GetPostsForSpaceLatestParams{
 			SpaceID: sql.NullInt64{
 				Int64: spaceId,
 				Valid: true,
 			},
-			Days: days,
+			Days:   days,
+			UserID: userId,
 		})
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -218,13 +183,18 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 		}
 		var list []models.Post
 		for _, post := range res {
-			vote := models.Vote{
-				VoteId:          post.ID_2,
-				UserId:          post.UserID,
-				PostOrCommentId: post.PostOrCommentID,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+			var vote *models.Vote
+			if post.ID_2.Valid {
+				vote = &models.Vote{
+					VoteId:          post.ID_2.Int64,
+					UserId:          post.UserID.Int64,
+					PostOrCommentId: post.PostOrCommentID.Int64,
+					IsUpVote:        post.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.VoteType.VoteType),
+					IsDeleted:       post.IsDeleted_2.Bool,
+				}
+			} else {
+				vote = nil
 			}
 			list = append(list, models.Post{
 				Id:           post.ID,
@@ -249,7 +219,8 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 			Int64: spaceId,
 			Valid: true,
 		},
-		Days: days,
+		UserID: userId,
+		Days:   days,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -260,14 +231,20 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 	}
 	var list []models.Post
 	for _, post := range res {
-		vote := models.Vote{
-			VoteId:          post.ID_2,
-			UserId:          post.UserID,
-			PostOrCommentId: post.PostOrCommentID,
-			IsUpVote:        post.IsUpVote.Bool,
-			VoteType:        models.VoteType(post.VoteType),
-			IsDeleted:       post.IsDeleted_2.Bool,
+		var vote *models.Vote
+		if post.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          post.ID_2.Int64,
+				UserId:          post.UserID.Int64,
+				PostOrCommentId: post.PostOrCommentID.Int64,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
 		}
+
 		list = append(list, models.Post{
 			Id:           post.ID,
 			SpaceId:      post.SpaceID.Int64,
@@ -285,4 +262,52 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 		})
 	}
 	return list, nil
+}
+
+func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
+	userId, err := c.ParamsInt("id", -1)
+	if userId == -1 || err != nil {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	res, err := queries.GetPostsForUser(c.Context(), int64(userId))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Post
+	for _, post := range res {
+		var vote *models.Vote
+		if post.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          post.ID_2.Int64,
+				UserId:          post.UserID.Int64,
+				PostOrCommentId: post.PostOrCommentID.Int64,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
+		}
+		list = append(list, models.Post{
+			Id:           post.ID,
+			SpaceId:      post.SpaceID.Int64,
+			PosterId:     post.PosterID.Int64,
+			SpacePicture: post.SpacePicture.String,
+			Topic:        post.Topic,
+			Content:      post.Content.String,
+			PosterName:   post.DisplayName,
+			ContentType:  models.ContentType(post.ContentType.ContentType),
+			Body:         post.Body.String,
+			UpVotes:      post.UpVotes,
+			DownVotes:    post.DownVotes,
+			Created:      post.Created.Time,
+			Vote:         vote,
+		})
+	}
+	return c.JSON(list)
 }

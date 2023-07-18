@@ -308,8 +308,13 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         join votes v on c.poster_id = v.user_id
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2
 `
+
+type GetCommentsForCommentParams struct {
+	ID     int64
+	UserID int64
+}
 
 type GetCommentsForCommentRow struct {
 	ID              int64
@@ -325,16 +330,16 @@ type GetCommentsForCommentRow struct {
 	DisplayName     string
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
-func (q *Queries) GetCommentsForComment(ctx context.Context, id int64) ([]GetCommentsForCommentRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCommentsForComment, id)
+func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForCommentParams) ([]GetCommentsForCommentRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForComment, arg.ID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -421,9 +426,14 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
           AND v.is_up_vote = false) AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForPost c
-         join votes v on c.poster_id = v.user_id
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2
          join users u on c.poster_id = u.id
 `
+
+type GetCommentsForPostParams struct {
+	PostID int64
+	UserID int64
+}
 
 type GetCommentsForPostRow struct {
 	ID              int64
@@ -439,16 +449,16 @@ type GetCommentsForPostRow struct {
 	DisplayName     string
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
-func (q *Queries) GetCommentsForPost(ctx context.Context, postID int64) ([]GetCommentsForPostRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCommentsForPost, postID)
+func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPostParams) ([]GetCommentsForPostRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForPost, arg.PostID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -649,15 +659,16 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2
 WHERE space_id = $1
   AND p.id != 1
-  AND current_timestamp - p.created < make_interval(days => $2)
+  AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY p.created DESC
 `
 
 type GetPostsForSpaceLatestParams struct {
 	SpaceID sql.NullInt64
+	UserID  int64
 	Days    int32
 }
 
@@ -675,16 +686,16 @@ type GetPostsForSpaceLatestRow struct {
 	SpacePicture    sql.NullString
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpaceLatestParams) ([]GetPostsForSpaceLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatest, arg.SpaceID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatest, arg.SpaceID, arg.UserID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
@@ -744,15 +755,16 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2
 WHERE space_id = $1
   AND p.id != 1
-  AND current_timestamp - p.created < make_interval(days => $2)
+  AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY up_votes DESC
 `
 
 type GetPostsForSpacePopularParams struct {
 	SpaceID sql.NullInt64
+	UserID  int64
 	Days    int32
 }
 
@@ -770,16 +782,16 @@ type GetPostsForSpacePopularRow struct {
 	SpacePicture    sql.NullString
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSpacePopularParams) ([]GetPostsForSpacePopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopular, arg.SpaceID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopular, arg.SpaceID, arg.UserID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
@@ -839,7 +851,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $1
 WHERE p.poster_id = $1
   AND p.id != 1
 `
@@ -858,16 +870,16 @@ type GetPostsForUserRow struct {
 	SpacePicture    sql.NullString
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
-func (q *Queries) GetPostsForUser(ctx context.Context, posterID sql.NullInt64) ([]GetPostsForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUser, posterID)
+func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPostsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForUser, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1066,7 +1078,6 @@ FROM votes
 WHERE user_id = $1
   AND post_or_comment_id = $2
   AND vote_type = $3
-  AND is_deleted = false
 LIMIT 1
 `
 

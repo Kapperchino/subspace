@@ -93,10 +93,10 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2
 WHERE space_id = $1
   AND p.id != 1
-  AND current_timestamp - p.created < make_interval(days => $2)
+  AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY p.created DESC;
 
 -- name: GetPostsForSpacePopular :many
@@ -117,10 +117,10 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2
 WHERE space_id = $1
   AND p.id != 1
-  AND current_timestamp - p.created < make_interval(days => $2)
+  AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY up_votes DESC;
 
 -- name: GetPostsForUser :many
@@ -141,7 +141,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $1
 WHERE p.poster_id = $1
   AND p.id != 1;
 
@@ -190,9 +190,8 @@ SELECT c.*,
           AND v.is_up_vote = false) AS down_votes,
        v.*
 FROM allCommentsForPost c
-         join votes v on c.poster_id = v.user_id
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2
          join users u on c.poster_id = u.id;
-
 
 -- name: GetCommentsForComment :many
 WITH RECURSIVE allCommentsForComment AS (
@@ -241,8 +240,7 @@ SELECT c.*,
        v.*
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         join votes v on c.poster_id = v.user_id;
-
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2;
 -- name: GetCommentsForUser :many
 SELECT c.*,
        u.display_name,
@@ -304,7 +302,6 @@ FROM votes
 WHERE user_id = $1
   AND post_or_comment_id = $2
   AND vote_type = $3
-  AND is_deleted = false
 LIMIT 1;
 
 -- name: GetVotesForPost :one

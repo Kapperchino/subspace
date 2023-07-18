@@ -158,6 +158,14 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 		}
 		var list []models.Post
 		for _, post := range res {
+			vote := models.Vote{
+				VoteId:          post.ID_2,
+				UserId:          post.UserID,
+				PostOrCommentId: post.PostOrCommentID,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
 			list = append(list, models.Post{
 				Id:           post.ID,
 				SpaceId:      post.SpaceID.Int64,
@@ -171,6 +179,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 				UpVotes:      post.UpVotes,
 				DownVotes:    post.DownVotes,
 				Created:      post.Created.Time,
+				Vote:         vote,
 			})
 		}
 		return c.JSON(list)
@@ -209,6 +218,14 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 		}
 		var list []models.Post
 		for _, post := range res {
+			vote := models.Vote{
+				VoteId:          post.ID_2,
+				UserId:          post.UserID,
+				PostOrCommentId: post.PostOrCommentID,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
 			list = append(list, models.Post{
 				Id:           post.ID,
 				SpaceId:      post.SpaceID.Int64,
@@ -222,6 +239,7 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 				UpVotes:      post.UpVotes,
 				DownVotes:    post.DownVotes,
 				Created:      post.Created.Time,
+				Vote:         vote,
 			})
 		}
 		return list, nil
@@ -242,6 +260,14 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 	}
 	var list []models.Post
 	for _, post := range res {
+		vote := models.Vote{
+			VoteId:          post.ID_2,
+			UserId:          post.UserID,
+			PostOrCommentId: post.PostOrCommentID,
+			IsUpVote:        post.IsUpVote.Bool,
+			VoteType:        models.VoteType(post.VoteType),
+			IsDeleted:       post.IsDeleted_2.Bool,
+		}
 		list = append(list, models.Post{
 			Id:           post.ID,
 			SpaceId:      post.SpaceID.Int64,
@@ -255,6 +281,7 @@ func (u *PostService) getPosts(spaceId int64, isPopular bool, days int32, querie
 			UpVotes:      post.UpVotes,
 			DownVotes:    post.DownVotes,
 			Created:      post.Created.Time,
+			Vote:         vote,
 		})
 	}
 	return list, nil

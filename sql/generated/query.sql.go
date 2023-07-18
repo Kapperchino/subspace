@@ -304,25 +304,33 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
+         join votes v on c.poster_id = v.user_id
 `
 
 type GetCommentsForCommentRow struct {
-	ID          int64
-	PostID      int64
-	PosterID    int64
-	ParentID    sql.NullInt64
-	Body        string
-	ContentType NullContentType
-	Content     sql.NullString
-	IsDeleted   sql.NullBool
-	Created     sql.NullTime
-	Level       int32
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+	ID              int64
+	PostID          int64
+	PosterID        int64
+	ParentID        sql.NullInt64
+	Body            string
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	Level           int32
+	DisplayName     string
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetCommentsForComment(ctx context.Context, id int64) ([]GetCommentsForCommentRow, error) {
@@ -348,6 +356,12 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, id int64) ([]GetCom
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -404,25 +418,33 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForPost c
+         join votes v on c.poster_id = v.user_id
          join users u on c.poster_id = u.id
 `
 
 type GetCommentsForPostRow struct {
-	ID          int64
-	PostID      int64
-	PosterID    int64
-	ParentID    sql.NullInt64
-	Body        string
-	ContentType NullContentType
-	Content     sql.NullString
-	IsDeleted   sql.NullBool
-	Created     sql.NullTime
-	Level       int32
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+	ID              int64
+	PostID          int64
+	PosterID        int64
+	ParentID        sql.NullInt64
+	Body            string
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	Level           int32
+	DisplayName     string
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetCommentsForPost(ctx context.Context, postID int64) ([]GetCommentsForPostRow, error) {
@@ -448,6 +470,12 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, postID int64) ([]GetCo
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -544,28 +572,36 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE p.id = $1
 LIMIT 1
 `
 
 type GetPostRow struct {
-	ID           int64
-	SpaceID      sql.NullInt64
-	PosterID     sql.NullInt64
-	Topic        string
-	Body         sql.NullString
-	ContentType  NullContentType
-	Content      sql.NullString
-	IsDeleted    sql.NullBool
-	Created      sql.NullTime
-	DisplayName  string
-	SpacePicture sql.NullString
-	UpVotes      int64
-	DownVotes    int64
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
@@ -585,6 +621,12 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 		&i.SpacePicture,
 		&i.UpVotes,
 		&i.DownVotes,
+		&i.ID_2,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted_2,
 	)
 	return i, err
 }
@@ -602,10 +644,12 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -618,19 +662,25 @@ type GetPostsForSpaceLatestParams struct {
 }
 
 type GetPostsForSpaceLatestRow struct {
-	ID           int64
-	SpaceID      sql.NullInt64
-	PosterID     sql.NullInt64
-	Topic        string
-	Body         sql.NullString
-	ContentType  NullContentType
-	Content      sql.NullString
-	IsDeleted    sql.NullBool
-	Created      sql.NullTime
-	DisplayName  string
-	SpacePicture sql.NullString
-	UpVotes      int64
-	DownVotes    int64
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpaceLatestParams) ([]GetPostsForSpaceLatestRow, error) {
@@ -656,6 +706,12 @@ func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpa
 			&i.SpacePicture,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -683,10 +739,12 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -699,19 +757,25 @@ type GetPostsForSpacePopularParams struct {
 }
 
 type GetPostsForSpacePopularRow struct {
-	ID           int64
-	SpaceID      sql.NullInt64
-	PosterID     sql.NullInt64
-	Topic        string
-	Body         sql.NullString
-	ContentType  NullContentType
-	Content      sql.NullString
-	IsDeleted    sql.NullBool
-	Created      sql.NullTime
-	DisplayName  string
-	SpacePicture sql.NullString
-	UpVotes      int64
-	DownVotes    int64
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSpacePopularParams) ([]GetPostsForSpacePopularRow, error) {
@@ -737,6 +801,12 @@ func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSp
 			&i.SpacePicture,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -764,28 +834,36 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE p.poster_id = $1
   AND p.id != 1
 `
 
 type GetPostsForUserRow struct {
-	ID           int64
-	SpaceID      sql.NullInt64
-	PosterID     sql.NullInt64
-	Topic        string
-	Body         sql.NullString
-	ContentType  NullContentType
-	Content      sql.NullString
-	IsDeleted    sql.NullBool
-	Created      sql.NullTime
-	DisplayName  string
-	SpacePicture sql.NullString
-	UpVotes      int64
-	DownVotes    int64
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted_2     sql.NullBool
 }
 
 func (q *Queries) GetPostsForUser(ctx context.Context, posterID sql.NullInt64) ([]GetPostsForUserRow, error) {
@@ -811,6 +889,12 @@ func (q *Queries) GetPostsForUser(ctx context.Context, posterID sql.NullInt64) (
 			&i.SpacePicture,
 			&i.UpVotes,
 			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -956,21 +1040,14 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 	return i, err
 }
 
-const getVoteForPostOrCommentForUser = `-- name: GetVoteForPostOrCommentForUser :one
+const getVoteForId = `-- name: GetVoteForId :one
 SELECT id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
 FROM votes
-WHERE user_id = $1
-  AND post_or_comment_id = $2
-LIMIT 1
+WHERE id = $1
 `
 
-type GetVoteForPostOrCommentForUserParams struct {
-	UserID          int64
-	PostOrCommentID int64
-}
-
-func (q *Queries) GetVoteForPostOrCommentForUser(ctx context.Context, arg GetVoteForPostOrCommentForUserParams) (Vote, error) {
-	row := q.db.QueryRowContext(ctx, getVoteForPostOrCommentForUser, arg.UserID, arg.PostOrCommentID)
+func (q *Queries) GetVoteForId(ctx context.Context, id int64) (Vote, error) {
+	row := q.db.QueryRowContext(ctx, getVoteForId, id)
 	var i Vote
 	err := row.Scan(
 		&i.ID,
@@ -983,42 +1060,140 @@ func (q *Queries) GetVoteForPostOrCommentForUser(ctx context.Context, arg GetVot
 	return i, err
 }
 
-const getVotesForPostOrComment = `-- name: GetVotesForPostOrComment :many
+const getVoteForPostOrCommentForUser = `-- name: GetVoteForPostOrCommentForUser :one
 SELECT id, is_up_vote, user_id, post_or_comment_id, vote_type, is_deleted
 FROM votes
-WHERE post_or_comment_id = $1
+WHERE user_id = $1
+  AND post_or_comment_id = $2
+  AND vote_type = $3
   AND is_deleted = false
 LIMIT 1
 `
 
-func (q *Queries) GetVotesForPostOrComment(ctx context.Context, postOrCommentID int64) ([]Vote, error) {
-	rows, err := q.db.QueryContext(ctx, getVotesForPostOrComment, postOrCommentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Vote
-	for rows.Next() {
-		var i Vote
-		if err := rows.Scan(
-			&i.ID,
-			&i.IsUpVote,
-			&i.UserID,
-			&i.PostOrCommentID,
-			&i.VoteType,
-			&i.IsDeleted,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type GetVoteForPostOrCommentForUserParams struct {
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+}
+
+func (q *Queries) GetVoteForPostOrCommentForUser(ctx context.Context, arg GetVoteForPostOrCommentForUserParams) (Vote, error) {
+	row := q.db.QueryRowContext(ctx, getVoteForPostOrCommentForUser, arg.UserID, arg.PostOrCommentID, arg.VoteType)
+	var i Vote
+	err := row.Scan(
+		&i.ID,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted,
+	)
+	return i, err
+}
+
+const getVotesForComment = `-- name: GetVotesForComment :one
+SELECT (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.vote_type = 'comment'
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.vote_type = 'comment'
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM comments c
+         join votes v on c.id = v.post_or_comment_id
+WHERE c.id = $1
+  AND v.user_id = $2
+  AND v.vote_type = 'comment'
+`
+
+type GetVotesForCommentParams struct {
+	ID     int64
+	UserID int64
+}
+
+type GetVotesForCommentRow struct {
+	UpVotes         int64
+	DownVotes       int64
+	ID              int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) GetVotesForComment(ctx context.Context, arg GetVotesForCommentParams) (GetVotesForCommentRow, error) {
+	row := q.db.QueryRowContext(ctx, getVotesForComment, arg.ID, arg.UserID)
+	var i GetVotesForCommentRow
+	err := row.Scan(
+		&i.UpVotes,
+		&i.DownVotes,
+		&i.ID,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted,
+	)
+	return i, err
+}
+
+const getVotesForPost = `-- name: GetVotesForPost :one
+SELECT (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.vote_type = 'post'
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.vote_type = 'post'
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM posts p
+         join votes v on p.id = v.post_or_comment_id
+WHERE p.id = $1
+  AND v.user_id = $2
+  AND v.vote_type = 'post'
+`
+
+type GetVotesForPostParams struct {
+	ID     int64
+	UserID int64
+}
+
+type GetVotesForPostRow struct {
+	UpVotes         int64
+	DownVotes       int64
+	ID              int64
+	IsUpVote        sql.NullBool
+	UserID          int64
+	PostOrCommentID int64
+	VoteType        VoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) GetVotesForPost(ctx context.Context, arg GetVotesForPostParams) (GetVotesForPostRow, error) {
+	row := q.db.QueryRowContext(ctx, getVotesForPost, arg.ID, arg.UserID)
+	var i GetVotesForPostRow
+	err := row.Scan(
+		&i.UpVotes,
+		&i.DownVotes,
+		&i.ID,
+		&i.IsUpVote,
+		&i.UserID,
+		&i.PostOrCommentID,
+		&i.VoteType,
+		&i.IsDeleted,
+	)
+	return i, err
 }
 
 const refreshVote = `-- name: RefreshVote :exec

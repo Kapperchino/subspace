@@ -50,6 +50,7 @@ func (u *VoteService) CreateVote(c *fiber.Ctx) error {
 		gen.GetVoteForPostOrCommentForUserParams{
 			UserID:          req.UserId,
 			PostOrCommentID: req.PostOrCommentId,
+			VoteType:        gen.VoteType(req.VoteType),
 		})
 	if err != nil && err != sql.ErrNoRows {
 		log.Error().Err(err).Msg("Error creating transaction")
@@ -108,5 +109,101 @@ func (u *VoteService) CreateVote(c *fiber.Ctx) error {
 		PostOrCommentId: vote.PostOrCommentID,
 		VoteType:        models.VoteType(vote.VoteType),
 		IsUpVote:        req.IsUpVote,
+	})
+}
+
+func (u *VoteService) GetVote(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id", -1)
+	if err != nil {
+		return err
+	}
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	vote, err := queries.GetVoteForId(c.Context(), int64(id))
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting vote")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	return c.JSON(models.Vote{
+		VoteId:          vote.ID,
+		UserId:          vote.UserID,
+		PostOrCommentId: vote.PostOrCommentID,
+		VoteType:        models.VoteType(vote.VoteType),
+		IsUpVote:        vote.IsUpVote.Bool,
+		IsDeleted:       vote.IsDeleted.Bool,
+	})
+}
+
+func (u *VoteService) GetVotesForPost(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id", -1)
+	userId := c.QueryInt("userId", -1)
+	if err != nil {
+		return err
+	}
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	votes, err := queries.GetVotesForPost(c.Context(), gen.GetVotesForPostParams{
+		ID:     int64(id),
+		UserID: int64(userId),
+	})
+	if err != nil && err == sql.ErrNoRows {
+		return c.SendStatus(200)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting vote")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	return c.JSON(models.VotesMeta{
+		VoteId:          votes.ID,
+		UpVotes:         votes.UpVotes,
+		DownVotes:       votes.DownVotes,
+		UserId:          votes.UserID,
+		PostOrCommentId: votes.PostOrCommentID,
+		IsUpVote:        votes.IsUpVote.Bool,
+		VoteType:        models.VoteType(votes.VoteType),
+		IsDeleted:       votes.IsDeleted.Bool,
+	})
+}
+
+func (u *VoteService) GetVotesForComment(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id", -1)
+	userId := c.QueryInt("userId", -1)
+	if err != nil {
+		return err
+	}
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	votes, err := queries.GetVotesForComment(c.Context(), gen.GetVotesForCommentParams{
+		ID:     int64(id),
+		UserID: int64(userId),
+	})
+	if err != nil && err == sql.ErrNoRows {
+		return c.SendStatus(200)
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting vote")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	return c.JSON(models.VotesMeta{
+		VoteId:          votes.ID,
+		UpVotes:         votes.UpVotes,
+		DownVotes:       votes.DownVotes,
+		UserId:          votes.UserID,
+		PostOrCommentId: votes.PostOrCommentID,
+		IsUpVote:        votes.IsUpVote.Bool,
+		VoteType:        models.VoteType(votes.VoteType),
+		IsDeleted:       votes.IsDeleted.Bool,
 	})
 }

@@ -109,6 +109,13 @@ func main() {
 	app.Get("/posts/", postService.GetPosts)
 	//votes
 	app.Post("/votes", voteService.CreateVote)
+
+	app.Get("/votes/:id", voteService.GetVote)
+
+	app.Get("/votes/posts/:id", voteService.GetVotesForPost)
+
+	app.Get("/votes/comments/:id", voteService.GetVotesForComment)
+
 	//comments
 	app.Post("/comments", commentService.CreateComment)
 

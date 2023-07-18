@@ -66,10 +66,12 @@ SELECT p.*,
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE p.id = $1
 LIMIT 1;
 
@@ -86,10 +88,12 @@ SELECT p.*,
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -108,10 +112,12 @@ SELECT p.*,
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -130,10 +136,12 @@ SELECT p.*,
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
+         join votes v on p.poster_id = v.user_id
 WHERE p.poster_id = $1
   AND p.id != 1;
 
@@ -179,8 +187,10 @@ SELECT c.*,
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM allCommentsForPost c
+         join votes v on c.poster_id = v.user_id
          join users u on c.poster_id = u.id;
 
 
@@ -227,9 +237,11 @@ SELECT c.*,
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
 FROM allCommentsForComment c
-         join users u on c.poster_id = u.id;
+         join users u on c.poster_id = u.id
+         join votes v on c.poster_id = v.user_id;
 
 -- name: GetCommentsForUser :many
 SELECT c.*,
@@ -291,11 +303,50 @@ SELECT *
 FROM votes
 WHERE user_id = $1
   AND post_or_comment_id = $2
-LIMIT 1;
-
--- name: GetVotesForPostOrComment :many
-SELECT *
-FROM votes
-WHERE post_or_comment_id = $1
+  AND vote_type = $3
   AND is_deleted = false
 LIMIT 1;
+
+-- name: GetVotesForPost :one
+SELECT (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.vote_type = 'post'
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.vote_type = 'post'
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
+FROM posts p
+         join votes v on p.id = v.post_or_comment_id
+WHERE p.id = $1
+  AND v.user_id = $2
+  AND v.vote_type = 'post';
+
+-- name: GetVotesForComment :one
+SELECT (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.vote_type = 'comment'
+          AND v.is_deleted = false
+          AND v.is_up_vote = true)  AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = c.id
+          AND v.vote_type = 'comment'
+          AND v.is_deleted = false
+          AND v.is_up_vote = false) AS down_votes,
+       v.*
+FROM comments c
+         join votes v on c.id = v.post_or_comment_id
+WHERE c.id = $1
+  AND v.user_id = $2
+  AND v.vote_type = 'comment';
+-- name: GetVoteForId :one
+SELECT *
+FROM votes
+WHERE id = $1;

@@ -129,6 +129,14 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		}
 		var list []models.Comment
 		for _, comment := range res {
+			vote := models.Vote{
+				VoteId:          comment.ID_2,
+				UserId:          comment.UserID,
+				PostOrCommentId: comment.PostOrCommentID,
+				IsUpVote:        comment.IsUpVote.Bool,
+				VoteType:        models.VoteType(comment.VoteType),
+				IsDeleted:       comment.IsDeleted_2.Bool,
+			}
 			list = append(list, models.Comment{
 				Id:          comment.ID,
 				PosterId:    comment.PosterID,
@@ -141,6 +149,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 				UpVotes:     comment.UpVotes,
 				DownVotes:   comment.DownVotes,
 				Created:     comment.Created.Time,
+				Vote:        vote,
 			})
 		}
 		return c.JSON(list)
@@ -155,6 +164,14 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	var list []models.Comment
 	for _, comment := range res {
+		vote := models.Vote{
+			VoteId:          comment.ID_2,
+			UserId:          comment.UserID,
+			PostOrCommentId: comment.PostOrCommentID,
+			IsUpVote:        comment.IsUpVote.Bool,
+			VoteType:        models.VoteType(comment.VoteType),
+			IsDeleted:       comment.IsDeleted_2.Bool,
+		}
 		list = append(list, models.Comment{
 			Id:          comment.ID,
 			PosterId:    comment.PosterID,
@@ -166,6 +183,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 			UpVotes:     comment.UpVotes,
 			DownVotes:   comment.DownVotes,
 			Created:     comment.Created.Time,
+			Vote:        vote,
 		})
 	}
 	return c.JSON(list)

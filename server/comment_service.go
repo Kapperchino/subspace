@@ -137,13 +137,18 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		}
 		var list []models.Comment
 		for _, comment := range res {
-			vote := models.Vote{
-				VoteId:          comment.ID_2.Int64,
-				UserId:          comment.UserID.Int64,
-				PostOrCommentId: comment.PostOrCommentID.Int64,
-				IsUpVote:        comment.IsUpVote.Bool,
-				VoteType:        models.VoteType(comment.VoteType.VoteType),
-				IsDeleted:       comment.IsDeleted_2.Bool,
+			var vote *models.Vote
+			if comment.ID_2.Valid {
+				vote = &models.Vote{
+					VoteId:          comment.ID_2.Int64,
+					UserId:          comment.UserID.Int64,
+					PostOrCommentId: comment.PostOrCommentID.Int64,
+					IsUpVote:        comment.IsUpVote.Bool,
+					VoteType:        models.VoteType(comment.VoteType.VoteType),
+					IsDeleted:       comment.IsDeleted_2.Bool,
+				}
+			} else {
+				vote = nil
 			}
 			list = append(list, models.Comment{
 				Id:          comment.ID,
@@ -175,14 +180,20 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	var list []models.Comment
 	for _, comment := range res {
-		vote := models.Vote{
-			VoteId:          comment.ID_2.Int64,
-			UserId:          comment.UserID.Int64,
-			PostOrCommentId: comment.PostOrCommentID.Int64,
-			IsUpVote:        comment.IsUpVote.Bool,
-			VoteType:        models.VoteType(comment.VoteType.VoteType),
-			IsDeleted:       comment.IsDeleted_2.Bool,
+		var vote *models.Vote
+		if comment.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          comment.ID_2.Int64,
+				UserId:          comment.UserID.Int64,
+				PostOrCommentId: comment.PostOrCommentID.Int64,
+				IsUpVote:        comment.IsUpVote.Bool,
+				VoteType:        models.VoteType(comment.VoteType.VoteType),
+				IsDeleted:       comment.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
 		}
+
 		list = append(list, models.Comment{
 			Id:          comment.ID,
 			PosterId:    comment.PosterID,

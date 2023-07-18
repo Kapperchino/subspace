@@ -215,12 +215,14 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'comment') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false
+          AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
 where c.id = $1
@@ -299,16 +301,19 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'comment') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'comment') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
 `
 
 type GetCommentsForCommentParams struct {
@@ -418,15 +423,18 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'comment') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'comment') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForPost c
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id
+         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
          join users u on c.poster_id = u.id
 `
 
@@ -507,12 +515,14 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'comment') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = c.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes
+          AND v.is_up_vote = false
+          AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
 where u.id = $1
@@ -577,20 +587,28 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         join votes v on p.poster_id = v.user_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
 WHERE p.id = $1
 LIMIT 1
 `
+
+type GetPostParams struct {
+	ID     int64
+	UserID int64
+}
 
 type GetPostRow struct {
 	ID              int64
@@ -606,16 +624,16 @@ type GetPostRow struct {
 	SpacePicture    sql.NullString
 	UpVotes         int64
 	DownVotes       int64
-	ID_2            int64
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
-	UserID          int64
-	PostOrCommentID int64
-	VoteType        VoteType
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
 	IsDeleted_2     sql.NullBool
 }
 
-func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
-	row := q.db.QueryRowContext(ctx, getPost, id)
+func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, error) {
+	row := q.db.QueryRowContext(ctx, getPost, arg.ID, arg.UserID)
 	var i GetPostRow
 	err := row.Scan(
 		&i.ID,
@@ -649,17 +667,20 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -745,17 +766,20 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -841,17 +865,20 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = true)  AS up_votes,
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
        (SELECT COUNT(id)
         FROM votes v
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
-          AND v.is_up_vote = false) AS down_votes,
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
 WHERE p.poster_id = $1
   AND p.id != 1
 `
@@ -1116,7 +1143,7 @@ SELECT (SELECT COUNT(id)
           AND v.is_up_vote = false) AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM comments c
-         join votes v on c.id = v.post_or_comment_id
+         join votes v on c.id = v.post_or_comment_id and v.vote_type = 'comment'
 WHERE c.id = $1
   AND v.user_id = $2
   AND v.vote_type = 'comment'
@@ -1169,7 +1196,7 @@ SELECT (SELECT COUNT(id)
           AND v.is_up_vote = false) AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts p
-         join votes v on p.id = v.post_or_comment_id
+         join votes v on p.id = v.post_or_comment_id and v.vote_type = 'post'
 WHERE p.id = $1
   AND v.user_id = $2
   AND v.vote_type = 'post'

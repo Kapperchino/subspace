@@ -95,22 +95,39 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 
 func (u *PostService) GetPostById(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id", -1)
+	userId := c.QueryInt("userId", -1)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
-	if id == -1 {
+	if id == -1 || userId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
-	res, err := queries.GetPost(c.Context(), int64(id))
+	res, err := queries.GetPost(c.Context(), gen.GetPostParams{
+		ID:     int64(id),
+		UserID: int64(userId),
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var vote *models.Vote
+	if res.ID_2.Valid {
+		vote = &models.Vote{
+			VoteId:          res.ID_2.Int64,
+			UserId:          res.UserID.Int64,
+			PostOrCommentId: res.PostOrCommentID.Int64,
+			IsUpVote:        res.IsUpVote.Bool,
+			VoteType:        models.VoteType(res.VoteType.VoteType),
+			IsDeleted:       res.IsDeleted_2.Bool,
+		}
+	} else {
+		vote = nil
 	}
 	return c.JSON(models.Post{
 		Id:           res.ID,
@@ -125,6 +142,7 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		UpVotes:      res.UpVotes,
 		DownVotes:    res.DownVotes,
 		Created:      res.Created.Time,
+		Vote:         vote,
 	})
 }
 

@@ -91,7 +91,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 const createSpace = `-- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, picture)
 VALUES ($1, $2, $3, $4)
-RETURNING id, parent_id, name, description, picture, is_deleted, created
+RETURNING id, parent_id, name, description, picture, is_deleted, created, ts
 `
 
 type CreateSpaceParams struct {
@@ -117,6 +117,7 @@ func (q *Queries) CreateSpace(ctx context.Context, arg CreateSpaceParams) (Space
 		&i.Picture,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Ts,
 	)
 	return i, err
 }
@@ -949,7 +950,7 @@ func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPosts
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT id, parent_id, name, description, picture, is_deleted, created
+SELECT id, parent_id, name, description, picture, is_deleted, created, ts
 FROM spaces
 WHERE id = $1
 LIMIT 1
@@ -966,12 +967,13 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (Space, error) {
 		&i.Picture,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Ts,
 	)
 	return i, err
 }
 
 const getSpaceByName = `-- name: GetSpaceByName :one
-SELECT id, parent_id, name, description, picture, is_deleted, created
+SELECT id, parent_id, name, description, picture, is_deleted, created, ts
 FROM spaces
 WHERE name = $1
   AND parent_id = $2
@@ -994,12 +996,13 @@ func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) 
 		&i.Picture,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Ts,
 	)
 	return i, err
 }
 
 const getSpacesOfParent = `-- name: GetSpacesOfParent :many
-SELECT id, parent_id, name, description, picture, is_deleted, created
+SELECT id, parent_id, name, description, picture, is_deleted, created, ts
 FROM spaces
 WHERE parent_id = $1
 `
@@ -1021,6 +1024,7 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Spac
 			&i.Picture,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 		); err != nil {
 			return nil, err
 		}
@@ -1243,6 +1247,44 @@ where id = $1
 func (q *Queries) RefreshVote(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, refreshVote, id)
 	return err
+}
+
+const searchSpace = `-- name: SearchSpace :many
+SELECT id, parent_id, name, description, picture, is_deleted, created, ts
+FROM spaces
+ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC
+`
+
+func (q *Queries) SearchSpace(ctx context.Context, toTsquery string) ([]Space, error) {
+	rows, err := q.db.QueryContext(ctx, searchSpace, toTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Space
+	for rows.Next() {
+		var i Space
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Name,
+			&i.Description,
+			&i.Picture,
+			&i.IsDeleted,
+			&i.Created,
+			&i.Ts,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const setVote = `-- name: SetVote :exec

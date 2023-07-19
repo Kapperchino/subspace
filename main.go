@@ -80,6 +80,13 @@ func main() {
 		Config:     config,
 		Validation: validation,
 	}
+
+	searchService := server.SearchService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
+
 	app.Use(cors.New())
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
@@ -125,6 +132,9 @@ func main() {
 	app.Get("/comments/:id", commentService.GetCommentById)
 
 	app.Get("/comments/", commentService.GetComments)
+
+	//search
+	app.Get("/search/:spaceName", searchService.SearchSpace)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

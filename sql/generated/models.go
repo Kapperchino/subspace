@@ -128,6 +128,7 @@ type Space struct {
 	Picture     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Ts          interface{}
 }
 
 type Subscription struct {

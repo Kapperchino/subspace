@@ -127,7 +127,8 @@ CREATE TABLE public.spaces (
     description text,
     picture text,
     is_deleted boolean DEFAULT false,
-    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(description, ''::text)), 'B'::"char"))) STORED
 );
 
 
@@ -495,4 +496,6 @@ ALTER TABLE ONLY public.votes
 INSERT INTO public.schema_migrations (version) VALUES
     ('20230622214053'),
     ('20230623164659'),
-    ('20230708182438');
+    ('20230708182438'),
+    ('20230719151733'),
+    ('20230719155613');

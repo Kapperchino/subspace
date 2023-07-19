@@ -16,6 +16,11 @@ WHERE name = $1
   AND parent_id = $2
 LIMIT 1;
 
+-- name: SearchSpace :many
+SELECT *
+FROM spaces
+ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC;
+
 -- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, picture)
 VALUES ($1, $2, $3, $4)

@@ -1464,6 +1464,7 @@ func (q *Queries) RefreshVote(ctx context.Context, id int64) error {
 const searchSpace = `-- name: SearchSpace :many
 SELECT id, parent_id, name, description, picture, is_deleted, created, ts
 FROM spaces
+WHERE id != 1
 ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC
 `
 

@@ -19,6 +19,7 @@ LIMIT 1;
 -- name: SearchSpace :many
 SELECT *
 FROM spaces
+WHERE id != 1
 ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC;
 
 -- name: CreateSpace :one

@@ -113,7 +113,9 @@ func main() {
 
 	app.Get("/posts/:id", postService.GetPostById)
 
-	app.Get("/posts/", postService.GetPosts)
+	app.Get("/posts/spaces/:id", postService.GetPosts)
+
+	app.Get("/posts/", postService.GetPostsByName)
 
 	app.Get("/posts/users/:id", postService.GetPostsForUser)
 

@@ -759,6 +759,112 @@ func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpa
 	return items, nil
 }
 
+const getPostsForSpaceLatestByName = `-- name: GetPostsForSpaceLatestByName :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $3 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
+WHERE s.name = $1
+  AND s.parent_id = $2
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $4)
+ORDER BY p.created DESC
+`
+
+type GetPostsForSpaceLatestByNameParams struct {
+	Name     string
+	ParentID int64
+	UserID   int64
+	Days     int32
+}
+
+type GetPostsForSpaceLatestByNameRow struct {
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted_2     sql.NullBool
+}
+
+func (q *Queries) GetPostsForSpaceLatestByName(ctx context.Context, arg GetPostsForSpaceLatestByNameParams) ([]GetPostsForSpaceLatestByNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatestByName,
+		arg.Name,
+		arg.ParentID,
+		arg.UserID,
+		arg.Days,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsForSpaceLatestByNameRow
+	for rows.Next() {
+		var i GetPostsForSpaceLatestByNameRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceID,
+			&i.PosterID,
+			&i.Topic,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.SpacePicture,
+			&i.UpVotes,
+			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPostsForSpacePopular = `-- name: GetPostsForSpacePopular :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
        u.display_name,
@@ -824,6 +930,112 @@ func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSp
 	var items []GetPostsForSpacePopularRow
 	for rows.Next() {
 		var i GetPostsForSpacePopularRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceID,
+			&i.PosterID,
+			&i.Topic,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.DisplayName,
+			&i.SpacePicture,
+			&i.UpVotes,
+			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsForSpacePopularByName = `-- name: GetPostsForSpacePopularByName :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+       u.display_name,
+       s.picture                    as space_picture,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $3 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
+WHERE s.name = $1
+  AND s.parent_id = $2
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $4)
+ORDER BY up_votes DESC
+`
+
+type GetPostsForSpacePopularByNameParams struct {
+	Name     string
+	ParentID int64
+	UserID   int64
+	Days     int32
+}
+
+type GetPostsForSpacePopularByNameRow struct {
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           string
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	DisplayName     string
+	SpacePicture    sql.NullString
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted_2     sql.NullBool
+}
+
+func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPostsForSpacePopularByNameParams) ([]GetPostsForSpacePopularByNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopularByName,
+		arg.Name,
+		arg.ParentID,
+		arg.UserID,
+		arg.Days,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsForSpacePopularByNameRow
+	for rows.Next() {
+		var i GetPostsForSpacePopularByNameRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SpaceID,

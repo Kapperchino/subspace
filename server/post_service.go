@@ -130,19 +130,21 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		vote = nil
 	}
 	return c.JSON(models.Post{
-		Id:           res.ID,
-		SpaceId:      res.SpaceID.Int64,
-		PosterId:     res.PosterID.Int64,
-		PosterName:   res.DisplayName,
-		SpacePicture: res.SpacePicture.String,
-		Topic:        res.Topic,
-		Body:         res.Body.String,
-		ContentType:  models.ContentType(res.ContentType.ContentType),
-		Content:      res.Content.String,
-		UpVotes:      res.UpVotes,
-		DownVotes:    res.DownVotes,
-		Created:      res.Created.Time,
-		Vote:         vote,
+		Id:            res.ID,
+		SpaceId:       res.SpaceID.Int64,
+		PosterId:      res.PosterID.Int64,
+		PosterName:    res.DisplayName,
+		SpacePicture:  res.SpacePicture.String,
+		Topic:         res.Topic,
+		Body:          res.Body.String,
+		ContentType:   models.ContentType(res.ContentType.ContentType),
+		Content:       res.Content.String,
+		UpVotes:       res.UpVotes,
+		DownVotes:     res.DownVotes,
+		Created:       res.Created.Time,
+		Vote:          vote,
+		SpaceParentId: res.ParentID,
+		SpaceName:     res.SpaceName,
 	})
 }
 
@@ -184,7 +186,6 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	if days > 365 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	//TODO:getPostsForUser move to a different endpoint
 	if spaceId == -1 {
 		spaceId = 1
 	}
@@ -207,6 +208,9 @@ func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string,
 }
 
 func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if spaceId == 1 {
+		return u.getPostsForHome(userId, isPopular, days, queries, c)
+	}
 	if !isPopular {
 		res, err := queries.GetPostsForSpaceLatest(c.Context(), gen.GetPostsForSpaceLatestParams{
 			SpaceID: sql.NullInt64{
@@ -239,19 +243,21 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName,
-				ContentType:  models.ContentType(post.ContentType.ContentType),
-				Body:         post.Body.String,
-				UpVotes:      post.UpVotes,
-				DownVotes:    post.DownVotes,
-				Created:      post.Created.Time,
-				Vote:         vote,
+				Id:            post.ID,
+				SpaceId:       post.SpaceID.Int64,
+				PosterId:      post.PosterID.Int64,
+				SpacePicture:  post.SpacePicture.String,
+				Topic:         post.Topic,
+				Content:       post.Content.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.ContentType.ContentType),
+				Body:          post.Body.String,
+				UpVotes:       post.UpVotes,
+				DownVotes:     post.DownVotes,
+				Created:       post.Created.Time,
+				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
 			})
 		}
 		return list, nil
@@ -288,19 +294,21 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName,
-			ContentType:  models.ContentType(post.ContentType.ContentType),
-			Body:         post.Body.String,
-			UpVotes:      post.UpVotes,
-			DownVotes:    post.DownVotes,
-			Created:      post.Created.Time,
-			Vote:         vote,
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
 		})
 	}
 	return list, nil
@@ -337,19 +345,21 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName,
-				ContentType:  models.ContentType(post.ContentType.ContentType),
-				Body:         post.Body.String,
-				UpVotes:      post.UpVotes,
-				DownVotes:    post.DownVotes,
-				Created:      post.Created.Time,
-				Vote:         vote,
+				Id:            post.ID,
+				SpaceId:       post.SpaceID.Int64,
+				PosterId:      post.PosterID.Int64,
+				SpacePicture:  post.SpacePicture.String,
+				Topic:         post.Topic,
+				Content:       post.Content.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.ContentType.ContentType),
+				Body:          post.Body.String,
+				UpVotes:       post.UpVotes,
+				DownVotes:     post.DownVotes,
+				Created:       post.Created.Time,
+				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
 			})
 		}
 		return list, nil
@@ -384,19 +394,21 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName,
-			ContentType:  models.ContentType(post.ContentType.ContentType),
-			Body:         post.Body.String,
-			UpVotes:      post.UpVotes,
-			DownVotes:    post.DownVotes,
-			Created:      post.Created.Time,
-			Vote:         vote,
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
 		})
 	}
 	return list, nil
@@ -432,20 +444,118 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 			vote = nil
 		}
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName,
-			ContentType:  models.ContentType(post.ContentType.ContentType),
-			Body:         post.Body.String,
-			UpVotes:      post.UpVotes,
-			DownVotes:    post.DownVotes,
-			Created:      post.Created.Time,
-			Vote:         vote,
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
 		})
 	}
 	return c.JSON(list)
+}
+
+func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if !isPopular {
+		res, err := queries.GetPostsForHomeLatest(c.Context(), gen.GetPostsForHomeLatestParams{
+			Days:   days,
+			UserID: userId,
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			var vote *models.Vote
+			if post.ID_2.Valid {
+				vote = &models.Vote{
+					VoteId:          post.ID_2.Int64,
+					UserId:          post.UserID.Int64,
+					PostOrCommentId: post.PostOrCommentID.Int64,
+					IsUpVote:        post.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.VoteType.VoteType),
+					IsDeleted:       post.IsDeleted_2.Bool,
+				}
+			} else {
+				vote = nil
+			}
+			list = append(list, models.Post{
+				Id:            post.ID,
+				SpaceId:       post.SpaceID.Int64,
+				PosterId:      post.PosterID.Int64,
+				SpacePicture:  post.SpacePicture.String,
+				Topic:         post.Topic,
+				Content:       post.Content.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.ContentType.ContentType),
+				Body:          post.Body.String,
+				UpVotes:       post.UpVotes,
+				DownVotes:     post.DownVotes,
+				Created:       post.Created.Time,
+				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
+			})
+		}
+		return list, nil
+	}
+	res, err := queries.GetPostsForHomePopular(c.Context(), gen.GetPostsForHomePopularParams{
+		UserID: userId,
+		Days:   days,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Post
+	for _, post := range res {
+		var vote *models.Vote
+		if post.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          post.ID_2.Int64,
+				UserId:          post.UserID.Int64,
+				PostOrCommentId: post.PostOrCommentID.Int64,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
+		}
+
+		list = append(list, models.Post{
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
+		})
+	}
+	return list, nil
 }

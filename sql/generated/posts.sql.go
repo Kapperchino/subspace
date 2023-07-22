@@ -10,6 +10,45 @@ import (
 	"database/sql"
 )
 
+const createPost = `-- name: CreatePost :one
+INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, space_id, poster_id, topic, body, content_type, content, is_deleted, created
+`
+
+type CreatePostParams struct {
+	SpaceID     sql.NullInt64
+	PosterID    sql.NullInt64
+	Topic       string
+	Body        sql.NullString
+	Content     sql.NullString
+	ContentType NullContentType
+}
+
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, createPost,
+		arg.SpaceID,
+		arg.PosterID,
+		arg.Topic,
+		arg.Body,
+		arg.Content,
+		arg.ContentType,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.SpaceID,
+		&i.PosterID,
+		&i.Topic,
+		&i.Body,
+		&i.ContentType,
+		&i.Content,
+		&i.IsDeleted,
+		&i.Created,
+	)
+	return i, err
+}
+
 const getPost = `-- name: GetPost :one
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
        u.display_name,

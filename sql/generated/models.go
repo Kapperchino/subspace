@@ -132,9 +132,10 @@ type Space struct {
 }
 
 type Subscription struct {
-	ID      int64
-	UserID  int64
-	SpaceID sql.NullInt64
+	ID        int64
+	UserID    int64
+	SpaceID   sql.NullInt64
+	IsDeleted sql.NullBool
 }
 
 type User struct {

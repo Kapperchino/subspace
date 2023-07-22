@@ -1,3 +1,8 @@
+-- name: CreatePost :one
+INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING *;
+
 -- name: GetPost :one
 SELECT p.*,
        u.display_name,

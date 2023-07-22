@@ -132,3 +132,31 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		Description: res.Description.String,
 	})
 }
+
+func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
+	userId, err := c.ParamsInt("id", -1)
+	// get all spaces
+	if userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	res, err := queries.GetUserSpaces(c.Context(), int64(userId))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Send(nil)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var spaces []models.Space
+	for _, space := range res {
+		spaces = append(spaces, models.Space{
+			ID:          space.ID,
+			ParentID:    space.ParentID,
+			Name:        space.Name,
+			Description: space.Description.String,
+			Picture:     space.Picture.String,
+		})
+	}
+	return c.JSON(spaces)
+}

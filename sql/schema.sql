@@ -177,7 +177,8 @@ ALTER SEQUENCE public.spaces_parent_id_seq OWNED BY public.spaces.parent_id;
 CREATE TABLE public.subscriptions (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
-    space_id bigint
+    space_id bigint,
+    is_deleted boolean DEFAULT false
 );
 
 
@@ -373,6 +374,14 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: subscriptions subscriptions_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_unique UNIQUE (user_id, space_id);
+
+
+--
 -- Name: users users_display_name_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -498,4 +507,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230623164659'),
     ('20230708182438'),
     ('20230719151733'),
-    ('20230719155613');
+    ('20230719155613'),
+    ('20230722173334'),
+    ('20230722182245');

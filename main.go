@@ -81,6 +81,12 @@ func main() {
 		Validation: validation,
 	}
 
+	subscriptionService := server.SubscriptionService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
+
 	searchService := server.SearchService{
 		DB:         db,
 		Config:     config,
@@ -102,12 +108,16 @@ func main() {
 	// Restricted Routes
 	//user
 	app.Get("/users/:id", userService.GetUserById)
+
 	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 
 	app.Get("/spaces/", spaceService.GetSpaces)
 
 	app.Get("/spaces/:id", spaceService.GetSpaceById)
+
+	app.Get("/spaces/users/:id", spaceService.GetSpacesForUser)
+
 	//posts
 	app.Post("/posts", postService.CreatePost)
 
@@ -134,6 +144,13 @@ func main() {
 	app.Get("/comments/:id", commentService.GetCommentById)
 
 	app.Get("/comments/", commentService.GetComments)
+
+	//subscription
+	app.Put("/subscriptions/", subscriptionService.CreateSubscription)
+
+	app.Get("/subscriptions/users/:id", subscriptionService.GetSubscriptionsForUser)
+
+	app.Delete("/subscriptions/", subscriptionService.DeleteSubscription)
 
 	//search
 	app.Get("/search/:spaceName", searchService.SearchSpace)

@@ -5,10 +5,10 @@ import "time"
 type PostCreation struct {
 	SpaceId     int64       `validate:"required" json:"space_id"`
 	PosterId    int64       `validate:"required" json:"poster_id"`
-	Topic       string      `validate:"required,max=6000" json:"topic"`
-	Body        string      `validate:"required,max=60000" json:"body"`
+	Topic       string      `validate:"max=6000" json:"topic"`
+	Body        string      `validate:"required_without_all=Content IsUpload,max=60000" json:"body"`
 	IsUpload    bool        `json:"is_upload"`
-	Content     string      `json:"content"`
+	Content     string      `validate:"required_without_all=Body IsUpload" json:"content"`
 	ContentType ContentType `json:"content_type"`
 }
 

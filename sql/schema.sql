@@ -79,7 +79,7 @@ CREATE TABLE public.posts (
     id bigint NOT NULL,
     space_id bigint,
     poster_id bigint,
-    topic text NOT NULL,
+    topic text,
     body text,
     content_type public.content_type DEFAULT 'text'::public.content_type,
     content text,
@@ -509,4 +509,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230719151733'),
     ('20230719155613'),
     ('20230722173334'),
-    ('20230722182245');
+    ('20230722182245'),
+    ('20230723191314');

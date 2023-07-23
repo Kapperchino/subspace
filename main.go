@@ -125,6 +125,8 @@ func main() {
 
 	app.Get("/posts/spaces/:id", postService.GetPosts)
 
+	app.Get("/posts/users/:id/subscriptions", postService.GetPostsForSubscription)
+
 	app.Get("/posts/", postService.GetPostsByName)
 
 	app.Get("/posts/users/:id", postService.GetPostsForUser)

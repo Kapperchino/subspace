@@ -198,6 +198,27 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	return c.JSON(list)
 }
 
+func (u *PostService) GetPostsForSubscription(c *fiber.Ctx) error {
+	userId, err := c.ParamsInt("id", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
+	if userId == -1 || err != nil {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if sort != "latest" && sort != "popular" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if days > 365 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	list, err := u.getPostsForUserSubscription(int64(userId), sort == "popular", int32(days), queries, c)
+	if err != nil {
+		return err
+	}
+	return c.JSON(list)
+}
+
 func (u *PostService) getPresigned(isUpload bool, c *fiber.Ctx) (string, string, error) {
 	if !isUpload {
 		return "", "", nil
@@ -513,6 +534,102 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 		return list, nil
 	}
 	res, err := queries.GetPostsForHomePopular(c.Context(), gen.GetPostsForHomePopularParams{
+		UserID: userId,
+		Days:   days,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Post
+	for _, post := range res {
+		var vote *models.Vote
+		if post.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          post.ID_2.Int64,
+				UserId:          post.UserID.Int64,
+				PostOrCommentId: post.PostOrCommentID.Int64,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
+		}
+
+		list = append(list, models.Post{
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
+		})
+	}
+	return list, nil
+}
+
+func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if !isPopular {
+		res, err := queries.GetPostsForUserSubscriptionLatest(c.Context(), gen.GetPostsForUserSubscriptionLatestParams{
+			Days:   days,
+			UserID: userId,
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			var vote *models.Vote
+			if post.ID_2.Valid {
+				vote = &models.Vote{
+					VoteId:          post.ID_2.Int64,
+					UserId:          post.UserID.Int64,
+					PostOrCommentId: post.PostOrCommentID.Int64,
+					IsUpVote:        post.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.VoteType.VoteType),
+					IsDeleted:       post.IsDeleted_2.Bool,
+				}
+			} else {
+				vote = nil
+			}
+			list = append(list, models.Post{
+				Id:            post.ID,
+				SpaceId:       post.SpaceID.Int64,
+				PosterId:      post.PosterID.Int64,
+				SpacePicture:  post.SpacePicture.String,
+				Topic:         post.Topic,
+				Content:       post.Content.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.ContentType.ContentType),
+				Body:          post.Body.String,
+				UpVotes:       post.UpVotes,
+				DownVotes:     post.DownVotes,
+				Created:       post.Created.Time,
+				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
+			})
+		}
+		return list, nil
+	}
+	res, err := queries.GetPostsForUserSubscriptionPopular(c.Context(), gen.GetPostsForUserSubscriptionPopularParams{
 		UserID: userId,
 		Days:   days,
 	})

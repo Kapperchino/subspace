@@ -98,10 +98,29 @@ func (s *SubscriptionService) CreateSubscription(c *fiber.Ctx) error {
 
 func (s *SubscriptionService) GetSubscriptionsForUser(c *fiber.Ctx) error {
 	userId, err := c.ParamsInt("id", -1)
+	spaceId := c.QueryInt("spaceId", -1)
 	if err != nil && userId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(s.getDB())
+	if spaceId != -1 {
+		sub, err := queries.GetActiveSubscription(c.Context(), gen.GetActiveSubscriptionParams{
+			UserID:  int64(userId),
+			SpaceID: sql.NullInt64{Int64: int64(spaceId), Valid: true},
+		})
+		if err != nil && err == sql.ErrNoRows || sub.ID == 0 {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		if err != nil {
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		return c.JSON(models.Subscription{
+			UserId:         sub.UserID,
+			SpaceId:        sub.SpaceID.Int64,
+			SubscriptionId: sub.ID,
+		})
+	}
 	subs, err := queries.GetSubscriptionsForUser(c.Context(), int64(userId))
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")

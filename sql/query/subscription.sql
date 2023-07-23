@@ -9,6 +9,14 @@ FROM subscriptions
 where user_id = $1
   AND space_id = $2;
 
+-- name: GetActiveSubscription :one
+SELECT *
+FROM subscriptions
+where user_id = $1
+  AND space_id = $2
+  AND is_deleted = false;
+
+
 -- name: GetSubscriptionsForUser :many
 SELECT *
 FROM subscriptions
@@ -23,6 +31,7 @@ RETURNING *;
 -- name: DeleteSubscription :exec
 UPDATE subscriptions
 set is_deleted = true
-where space_id = $1 AND user_id = $2;
+where space_id = $1
+  AND user_id = $2;
 
 

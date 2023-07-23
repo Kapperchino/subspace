@@ -36,7 +36,8 @@ func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscription
 const deleteSubscription = `-- name: DeleteSubscription :exec
 UPDATE subscriptions
 set is_deleted = true
-where space_id = $1 AND user_id = $2
+where space_id = $1
+  AND user_id = $2
 `
 
 type DeleteSubscriptionParams struct {
@@ -47,6 +48,31 @@ type DeleteSubscriptionParams struct {
 func (q *Queries) DeleteSubscription(ctx context.Context, arg DeleteSubscriptionParams) error {
 	_, err := q.db.ExecContext(ctx, deleteSubscription, arg.SpaceID, arg.UserID)
 	return err
+}
+
+const getActiveSubscription = `-- name: GetActiveSubscription :one
+SELECT id, user_id, space_id, is_deleted
+FROM subscriptions
+where user_id = $1
+  AND space_id = $2
+  AND is_deleted = false
+`
+
+type GetActiveSubscriptionParams struct {
+	UserID  int64
+	SpaceID sql.NullInt64
+}
+
+func (q *Queries) GetActiveSubscription(ctx context.Context, arg GetActiveSubscriptionParams) (Subscription, error) {
+	row := q.db.QueryRowContext(ctx, getActiveSubscription, arg.UserID, arg.SpaceID)
+	var i Subscription
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SpaceID,
+		&i.IsDeleted,
+	)
+	return i, err
 }
 
 const getSubscription = `-- name: GetSubscription :one

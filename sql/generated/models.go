@@ -112,7 +112,7 @@ type Post struct {
 	ID          int64
 	SpaceID     sql.NullInt64
 	PosterID    sql.NullInt64
-	Topic       string
+	Topic       sql.NullString
 	Body        sql.NullString
 	ContentType NullContentType
 	Content     sql.NullString

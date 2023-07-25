@@ -256,9 +256,8 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         join subscriptions su on su.space_id = p.space_id and su.is_deleted = false
-WHERE p.poster_id = $1
-  AND p.id != 1
+         join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC;
@@ -287,9 +286,8 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         join subscriptions su on su.space_id = p.space_id  and su.is_deleted = false
-WHERE p.poster_id = $1
-  AND p.id != 1
+         join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY up_votes DESC;

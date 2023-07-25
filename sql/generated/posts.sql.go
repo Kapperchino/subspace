@@ -19,7 +19,7 @@ RETURNING id, space_id, poster_id, topic, body, content_type, content, is_delete
 type CreatePostParams struct {
 	SpaceID     sql.NullInt64
 	PosterID    sql.NullInt64
-	Topic       string
+	Topic       sql.NullString
 	Body        sql.NullString
 	Content     sql.NullString
 	ContentType NullContentType
@@ -86,7 +86,7 @@ type GetPostRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -173,7 +173,7 @@ type GetPostsForHomeLatestRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -277,7 +277,7 @@ type GetPostsForHomePopularRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -382,7 +382,7 @@ type GetPostsForSpaceLatestRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -489,7 +489,7 @@ type GetPostsForSpaceLatestByNameRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -599,7 +599,7 @@ type GetPostsForSpacePopularRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -706,7 +706,7 @@ type GetPostsForSpacePopularByNameRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -808,7 +808,7 @@ type GetPostsForUserRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -897,9 +897,8 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         join subscriptions su on su.space_id = p.space_id and su.is_deleted = false
-WHERE p.poster_id = $1
-  AND p.id != 1
+         join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC
@@ -914,7 +913,7 @@ type GetPostsForUserSubscriptionLatestRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString
@@ -1003,9 +1002,8 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         join subscriptions su on su.space_id = p.space_id  and su.is_deleted = false
-WHERE p.poster_id = $1
-  AND p.id != 1
+         join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY up_votes DESC
@@ -1020,7 +1018,7 @@ type GetPostsForUserSubscriptionPopularRow struct {
 	ID              int64
 	SpaceID         sql.NullInt64
 	PosterID        sql.NullInt64
-	Topic           string
+	Topic           sql.NullString
 	Body            sql.NullString
 	ContentType     NullContentType
 	Content         sql.NullString

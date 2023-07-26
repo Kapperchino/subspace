@@ -129,6 +129,8 @@ func main() {
 
 	app.Get("/posts/", postService.GetPostsByName)
 
+	app.Get("/posts/tags/:name", postService.GetPostsForTag)
+
 	app.Get("/posts/users/:id", postService.GetPostsForUser)
 
 	//votes
@@ -155,7 +157,9 @@ func main() {
 	app.Delete("/subscriptions/", subscriptionService.DeleteSubscription)
 
 	//search
-	app.Get("/search/:spaceName", searchService.SearchSpace)
+	app.Get("/search/spaces/:term", searchService.SearchSpace)
+
+	app.Get("/search/posts/:term", searchService.SearchPosts)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

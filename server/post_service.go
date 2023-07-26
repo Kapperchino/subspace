@@ -7,6 +7,7 @@ import (
 	"github.com/Kapperchino/subspace/util"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
+	"strings"
 )
 
 type PostService struct {
@@ -39,7 +40,14 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
-	queries := gen.New(u.getDB())
+
+	tx, err := u.getDB().Begin()
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+	queries := gen.New(u.getDB()).WithTx(tx)
 	if req.ContentType == "" {
 		req.ContentType = models.CONTENT_TEXT
 	}
@@ -49,6 +57,36 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		content = "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
 	} else {
 		content = req.Content
+	}
+
+	var tags []gen.Tag
+	if req.Body != "" {
+		r := util.TagRegex
+		res := r.FindAllString(req.Body, -1)
+		if res != nil {
+			for _, s := range res {
+				trimmed := strings.TrimSpace(s)
+				switch trimmed[0] {
+				case '@':
+					break
+				case '#':
+					tag, err := queries.GetTag(c.Context(), trimmed[1:])
+					if err != nil && err == sql.ErrNoRows || tag.ID == 0 {
+						tag, err = queries.CreateTag(c.Context(), trimmed[1:])
+						if err != nil {
+							log.Error().Err(err).Msg("Error while creating using in db")
+							return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+						}
+					}
+					if err != nil {
+						log.Error().Err(err).Msg("Error while creating using in db")
+						return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+					}
+					tags = append(tags, tag)
+					break
+				}
+			}
+		}
 	}
 	post, err := queries.CreatePost(c.Context(), gen.CreatePostParams{
 		SpaceID: sql.NullInt64{
@@ -61,11 +99,11 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		},
 		Topic: sql.NullString{
 			String: req.Topic,
-			Valid:  req.Topic == "",
+			Valid:  req.Topic != "",
 		},
 		Body: sql.NullString{
 			String: req.Body,
-			Valid:  true,
+			Valid:  req.Body != "",
 		},
 		Content: sql.NullString{
 			String: content,
@@ -76,6 +114,25 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 			Valid:       req.ContentType != "",
 		},
 	})
+	if err != nil {
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+
+	for _, tag := range tags {
+		_, err = queries.CreateTagRelation(c.Context(), gen.CreateTagRelationParams{
+			TagID: sql.NullInt64{
+				Int64: tag.ID,
+				Valid: true,
+			},
+			PostOrCommentID: post.ID,
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+	}
+	err = tx.Commit()
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
@@ -149,6 +206,29 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		SpaceParentId: res.ParentID,
 		SpaceName:     res.SpaceName,
 	})
+}
+
+func (u *PostService) GetPostsForTag(c *fiber.Ctx) error {
+	tag := c.Params("name")
+	userId := c.QueryInt("userId", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
+	if tag == "" || userId == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if sort != "latest" && sort != "popular" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if days > 365 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+
+	list, err := u.getPostsForTag(tag, int64(userId), sort == "popular", int32(days), queries, c)
+	if err != nil {
+		return err
+	}
+	return c.JSON(list)
 }
 
 func (u *PostService) GetPostsByName(c *fiber.Ctx) error {
@@ -635,6 +715,104 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	res, err := queries.GetPostsForUserSubscriptionPopular(c.Context(), gen.GetPostsForUserSubscriptionPopularParams{
 		UserID: userId,
 		Days:   days,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Post
+	for _, post := range res {
+		var vote *models.Vote
+		if post.ID_2.Valid {
+			vote = &models.Vote{
+				VoteId:          post.ID_2.Int64,
+				UserId:          post.UserID.Int64,
+				PostOrCommentId: post.PostOrCommentID.Int64,
+				IsUpVote:        post.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.VoteType.VoteType),
+				IsDeleted:       post.IsDeleted_2.Bool,
+			}
+		} else {
+			vote = nil
+		}
+
+		list = append(list, models.Post{
+			Id:            post.ID,
+			SpaceId:       post.SpaceID.Int64,
+			PosterId:      post.PosterID.Int64,
+			SpacePicture:  post.SpacePicture.String,
+			Topic:         post.Topic.String,
+			Content:       post.Content.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.ContentType.ContentType),
+			Body:          post.Body.String,
+			UpVotes:       post.UpVotes,
+			DownVotes:     post.DownVotes,
+			Created:       post.Created.Time,
+			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
+		})
+	}
+	return list, nil
+}
+
+func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if !isPopular {
+		res, err := queries.GetPostsWithTagsLatest(c.Context(), gen.GetPostsWithTagsLatestParams{
+			Days:   days,
+			UserID: userId,
+			Name:   tag,
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			var vote *models.Vote
+			if post.ID_2.Valid {
+				vote = &models.Vote{
+					VoteId:          post.ID_2.Int64,
+					UserId:          post.UserID.Int64,
+					PostOrCommentId: post.PostOrCommentID.Int64,
+					IsUpVote:        post.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.VoteType.VoteType),
+					IsDeleted:       post.IsDeleted_2.Bool,
+				}
+			} else {
+				vote = nil
+			}
+			list = append(list, models.Post{
+				Id:            post.ID,
+				SpaceId:       post.SpaceID.Int64,
+				PosterId:      post.PosterID.Int64,
+				SpacePicture:  post.SpacePicture.String,
+				Topic:         post.Topic.String,
+				Content:       post.Content.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.ContentType.ContentType),
+				Body:          post.Body.String,
+				UpVotes:       post.UpVotes,
+				DownVotes:     post.DownVotes,
+				Created:       post.Created.Time,
+				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
+			})
+		}
+		return list, nil
+	}
+	res, err := queries.GetPostsWithTagsPopular(c.Context(), gen.GetPostsWithTagsPopularParams{
+		Days:   days,
+		UserID: userId,
+		Name:   tag,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {

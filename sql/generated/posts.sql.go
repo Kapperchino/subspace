@@ -13,7 +13,7 @@ import (
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, space_id, poster_id, topic, body, content_type, content, is_deleted, created
+RETURNING id, space_id, poster_id, topic, body, content_type, content, is_deleted, created, ts
 `
 
 type CreatePostParams struct {
@@ -45,12 +45,13 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.Content,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Ts,
 	)
 	return i, err
 }
 
 const getPost = `-- name: GetPost :one
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -92,6 +93,7 @@ type GetPostRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -119,6 +121,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, e
 		&i.Content,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Ts,
 		&i.DisplayName,
 		&i.SpacePicture,
 		&i.ParentID,
@@ -136,7 +139,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, e
 }
 
 const getPostsForHomeLatest = `-- name: GetPostsForHomeLatest :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -179,6 +182,7 @@ type GetPostsForHomeLatestRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -212,6 +216,7 @@ func (q *Queries) GetPostsForHomeLatest(ctx context.Context, arg GetPostsForHome
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -239,7 +244,7 @@ func (q *Queries) GetPostsForHomeLatest(ctx context.Context, arg GetPostsForHome
 }
 
 const getPostsForHomePopular = `-- name: GetPostsForHomePopular :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -283,6 +288,7 @@ type GetPostsForHomePopularRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -316,6 +322,7 @@ func (q *Queries) GetPostsForHomePopular(ctx context.Context, arg GetPostsForHom
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -343,7 +350,7 @@ func (q *Queries) GetPostsForHomePopular(ctx context.Context, arg GetPostsForHom
 }
 
 const getPostsForSpaceLatest = `-- name: GetPostsForSpaceLatest :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -388,6 +395,7 @@ type GetPostsForSpaceLatestRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -421,6 +429,7 @@ func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpa
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -448,7 +457,7 @@ func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpa
 }
 
 const getPostsForSpaceLatestByName = `-- name: GetPostsForSpaceLatestByName :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -495,6 +504,7 @@ type GetPostsForSpaceLatestByNameRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -533,6 +543,7 @@ func (q *Queries) GetPostsForSpaceLatestByName(ctx context.Context, arg GetPosts
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -560,7 +571,7 @@ func (q *Queries) GetPostsForSpaceLatestByName(ctx context.Context, arg GetPosts
 }
 
 const getPostsForSpacePopular = `-- name: GetPostsForSpacePopular :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -605,6 +616,7 @@ type GetPostsForSpacePopularRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -638,6 +650,7 @@ func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSp
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -665,7 +678,7 @@ func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSp
 }
 
 const getPostsForSpacePopularByName = `-- name: GetPostsForSpacePopularByName :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -712,6 +725,7 @@ type GetPostsForSpacePopularByNameRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -750,6 +764,7 @@ func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPost
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -777,7 +792,7 @@ func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPost
 }
 
 const getPostsForUser = `-- name: GetPostsForUser :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -814,6 +829,7 @@ type GetPostsForUserRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -847,6 +863,7 @@ func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPosts
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -874,7 +891,7 @@ func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPosts
 }
 
 const getPostsForUserSubscriptionLatest = `-- name: GetPostsForUserSubscriptionLatest :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -919,6 +936,7 @@ type GetPostsForUserSubscriptionLatestRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -952,6 +970,7 @@ func (q *Queries) GetPostsForUserSubscriptionLatest(ctx context.Context, arg Get
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,
@@ -979,7 +998,7 @@ func (q *Queries) GetPostsForUserSubscriptionLatest(ctx context.Context, arg Get
 }
 
 const getPostsForUserSubscriptionPopular = `-- name: GetPostsForUserSubscriptionPopular :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
        s.picture                    as space_picture,
        s.parent_id,
@@ -1024,6 +1043,7 @@ type GetPostsForUserSubscriptionPopularRow struct {
 	Content         sql.NullString
 	IsDeleted       sql.NullBool
 	Created         sql.NullTime
+	Ts              interface{}
 	DisplayName     string
 	SpacePicture    sql.NullString
 	ParentID        int64
@@ -1057,6 +1077,114 @@ func (q *Queries) GetPostsForUserSubscriptionPopular(ctx context.Context, arg Ge
 			&i.Content,
 			&i.IsDeleted,
 			&i.Created,
+			&i.Ts,
+			&i.DisplayName,
+			&i.SpacePicture,
+			&i.ParentID,
+			&i.SpaceName,
+			&i.UpVotes,
+			&i.DownVotes,
+			&i.ID_2,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted_2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchPost = `-- name: SearchPost :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
+       u.display_name,
+       s.picture                    as space_picture,
+       s.parent_id,
+       s.name                       as space_name,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = true
+          AND v.vote_type = 'post') AS up_votes,
+       (SELECT COUNT(id)
+        FROM votes v
+        WHERE v.post_or_comment_id = p.id
+          AND v.is_deleted = false
+          AND v.is_up_vote = false
+          AND v.vote_type = 'post') AS down_votes,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM posts p
+         join users u on p.poster_id = u.id
+         join spaces s on s.id = p.space_id
+         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
+WHERE p.id != 1
+  AND current_timestamp - p.created
+    < make_interval(days => $2)
+ORDER BY ts_rank(p.ts, to_tsquery('english', $3)) DESC, up_votes DESC
+`
+
+type SearchPostParams struct {
+	UserID    int64
+	Days      int32
+	ToTsquery string
+}
+
+type SearchPostRow struct {
+	ID              int64
+	SpaceID         sql.NullInt64
+	PosterID        sql.NullInt64
+	Topic           sql.NullString
+	Body            sql.NullString
+	ContentType     NullContentType
+	Content         sql.NullString
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	Ts              interface{}
+	DisplayName     string
+	SpacePicture    sql.NullString
+	ParentID        int64
+	SpaceName       string
+	UpVotes         int64
+	DownVotes       int64
+	ID_2            sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted_2     sql.NullBool
+}
+
+func (q *Queries) SearchPost(ctx context.Context, arg SearchPostParams) ([]SearchPostRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPost, arg.UserID, arg.Days, arg.ToTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchPostRow
+	for rows.Next() {
+		var i SearchPostRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SpaceID,
+			&i.PosterID,
+			&i.Topic,
+			&i.Body,
+			&i.ContentType,
+			&i.Content,
+			&i.IsDeleted,
+			&i.Created,
+			&i.Ts,
 			&i.DisplayName,
 			&i.SpacePicture,
 			&i.ParentID,

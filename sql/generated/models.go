@@ -108,6 +108,12 @@ type Comment struct {
 	Created     sql.NullTime
 }
 
+type Mention struct {
+	ID              int64
+	UserID          sql.NullInt64
+	UserMentionedID sql.NullInt64
+}
+
 type Post struct {
 	ID          int64
 	SpaceID     sql.NullInt64
@@ -118,6 +124,7 @@ type Post struct {
 	Content     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Ts          interface{}
 }
 
 type Space struct {
@@ -136,6 +143,17 @@ type Subscription struct {
 	UserID    int64
 	SpaceID   sql.NullInt64
 	IsDeleted sql.NullBool
+}
+
+type Tag struct {
+	ID   int64
+	Name string
+}
+
+type TagsRelation struct {
+	ID              int64
+	TagID           sql.NullInt64
+	PostOrCommentID int64
 }
 
 type User struct {

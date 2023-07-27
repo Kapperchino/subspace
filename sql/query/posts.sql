@@ -30,7 +30,7 @@ FROM posts p
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
-ORDER BY ts_rank(p.ts, to_tsquery('english', $3)) DESC, up_votes DESC;
+ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC;
 
 -- name: GetPost :one
 SELECT p.*,

@@ -189,11 +189,11 @@ const searchSpace = `-- name: SearchSpace :many
 SELECT id, parent_id, name, description, picture, is_deleted, created, ts
 FROM spaces
 WHERE id != 1
-ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC
+ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC
 `
 
-func (q *Queries) SearchSpace(ctx context.Context, toTsquery string) ([]Space, error) {
-	rows, err := q.db.QueryContext(ctx, searchSpace, toTsquery)
+func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Space, error) {
+	rows, err := q.db.QueryContext(ctx, searchSpace, plaintoTsquery)
 	if err != nil {
 		return nil, err
 	}

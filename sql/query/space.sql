@@ -27,7 +27,7 @@ WHERE su.user_id = $1
 SELECT *
 FROM spaces
 WHERE id != 1
-ORDER BY ts_rank(ts, to_tsquery('english', $1)) DESC;
+ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC;
 
 -- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, picture)

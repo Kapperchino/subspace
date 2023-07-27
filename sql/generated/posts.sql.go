@@ -1131,13 +1131,13 @@ FROM posts p
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
-ORDER BY ts_rank(p.ts, to_tsquery('english', $3)) DESC, up_votes DESC
+ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC
 `
 
 type SearchPostParams struct {
-	UserID    int64
-	Days      int32
-	ToTsquery string
+	UserID         int64
+	Days           int32
+	PlaintoTsquery string
 }
 
 type SearchPostRow struct {
@@ -1166,7 +1166,7 @@ type SearchPostRow struct {
 }
 
 func (q *Queries) SearchPost(ctx context.Context, arg SearchPostParams) ([]SearchPostRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchPost, arg.UserID, arg.Days, arg.ToTsquery)
+	rows, err := q.db.QueryContext(ctx, searchPost, arg.UserID, arg.Days, arg.PlaintoTsquery)
 	if err != nil {
 		return nil, err
 	}

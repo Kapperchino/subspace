@@ -157,9 +157,9 @@ func main() {
 	app.Delete("/subscriptions/", subscriptionService.DeleteSubscription)
 
 	//search
-	app.Get("/search/spaces/:term", searchService.SearchSpace)
+	app.Get("/search/spaces/", searchService.SearchSpace)
 
-	app.Get("/search/posts/:term", searchService.SearchPosts)
+	app.Get("/search/posts/", searchService.SearchPosts)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

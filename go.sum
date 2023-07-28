@@ -1,11 +1,11 @@
 github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec h1:fvoYru2i77CIsi4cysZytwQ2suMZOQ52agnYVnpkr2I=
 github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:hbI0deKoz8/eFKRDDZYMqm6i7OrfJZwRn0lmN54cvUE=
-github.com/Kapperchino/subspace/server v0.0.0-20230727000944-1fc82a6183ec h1:nisc8djSO5aZYSthHGX/6+hlWGfHRX9kefUPx1ZRtEY=
-github.com/Kapperchino/subspace/server v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:rvla/NMmz6bZOWW9i+H53YaObMB4GQ1hraiQRlPI8Ao=
+github.com/Kapperchino/subspace/server v0.0.0-20230728201655-9da20efff841 h1:xDgxwH3f05wkPO0GVXmhzG2993Apem1bQzDcO32HNFU=
+github.com/Kapperchino/subspace/server v0.0.0-20230728201655-9da20efff841/go.mod h1:6J19qXmy49N2LV+opmmba+avYrcEYyZhE45G3ARYHSs=
 github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec h1:/Oo/tha6BuFWutSwwtFgbjGQbvogFAFU/Rih1fue8D0=
 github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:VIxnIwSsQLxRtimb5zfOSognrEBYyuCwOnhcmQht1B8=
-github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec h1:ZGaJvczYT8K65+XeluFjsORPKiRkJ9FtU0Y3rMsmoRM=
-github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:j+p18MJDAIA2AZMPAdQJIFe8xxTZ4u1YYNXWnF58GQ4=
+github.com/Kapperchino/subspace/util v0.0.0-20230728201655-9da20efff841 h1:RyNgmQtFjPDkSi2BBYbgTGA3yOwDmtrt7isJVy3VFg0=
+github.com/Kapperchino/subspace/util v0.0.0-20230728201655-9da20efff841/go.mod h1:j+p18MJDAIA2AZMPAdQJIFe8xxTZ4u1YYNXWnF58GQ4=
 github.com/MicahParks/keyfunc/v2 v2.1.0 h1:6ZXKb9Rp6qp1bDbJefnG7cTH8yMN1IC/4nf+GVjO99k=
 github.com/MicahParks/keyfunc/v2 v2.1.0/go.mod h1:rW42fi+xgLJ2FRRXAfNx9ZA8WpD4OeE/yHVMteCkw9k=
 github.com/amacneil/dbmate/v2 v2.4.0 h1:kZNCWiYj/yVXR00+egkUNg+17lFpaeqwsFBJIVe4guU=

@@ -3,8 +3,6 @@ module github.com/Kapperchino/subspace
 go 1.20
 
 require (
-	github.com/Kapperchino/subspace/server v0.0.0-20230727000944-1fc82a6183ec
-	github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec
 	github.com/amacneil/dbmate/v2 v2.4.0
 	github.com/goccy/go-json v0.10.2
 	github.com/gofiber/contrib/jwt v1.0.2
@@ -14,8 +12,6 @@ require (
 )
 
 require (
-	github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec // indirect
-	github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec // indirect
 	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.1 // indirect

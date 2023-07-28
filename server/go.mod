@@ -3,9 +3,6 @@ module github.com/Kapperchino/subspace/server
 go 1.20
 
 require (
-	github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec
-	github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec
-	github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec
 	github.com/gofiber/fiber/v2 v2.47.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/rs/zerolog v1.29.1

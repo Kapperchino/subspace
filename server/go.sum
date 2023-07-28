@@ -1,9 +1,9 @@
-github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec h1:fvoYru2i77CIsi4cysZytwQ2suMZOQ52agnYVnpkr2I=
-github.com/Kapperchino/subspace/models v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:hbI0deKoz8/eFKRDDZYMqm6i7OrfJZwRn0lmN54cvUE=
-github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec h1:/Oo/tha6BuFWutSwwtFgbjGQbvogFAFU/Rih1fue8D0=
-github.com/Kapperchino/subspace/sql v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:VIxnIwSsQLxRtimb5zfOSognrEBYyuCwOnhcmQht1B8=
-github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec h1:ZGaJvczYT8K65+XeluFjsORPKiRkJ9FtU0Y3rMsmoRM=
-github.com/Kapperchino/subspace/util v0.0.0-20230727000944-1fc82a6183ec/go.mod h1:j+p18MJDAIA2AZMPAdQJIFe8xxTZ4u1YYNXWnF58GQ4=
+github.com/Kapperchino/subspace/models v0.0.0-20230728201655-9da20efff841 h1:miGFAOcKB7OGCFPsd84rOO1lhmPG53OLohuTQMmHjG8=
+github.com/Kapperchino/subspace/models v0.0.0-20230728201655-9da20efff841/go.mod h1:hbI0deKoz8/eFKRDDZYMqm6i7OrfJZwRn0lmN54cvUE=
+github.com/Kapperchino/subspace/sql v0.0.0-20230728201655-9da20efff841 h1:fEwTFVj+4oDTbeaXC7o8yZHqIYlEgrzRQXQRteNAnpA=
+github.com/Kapperchino/subspace/sql v0.0.0-20230728201655-9da20efff841/go.mod h1:tD+tQRbMp6PGdqcfAmXHjJSQ9UH+A7TLVncpr1fwkXs=
+github.com/Kapperchino/subspace/util v0.0.0-20230728201655-9da20efff841 h1:RyNgmQtFjPDkSi2BBYbgTGA3yOwDmtrt7isJVy3VFg0=
+github.com/Kapperchino/subspace/util v0.0.0-20230728201655-9da20efff841/go.mod h1:j+p18MJDAIA2AZMPAdQJIFe8xxTZ4u1YYNXWnF58GQ4=
 github.com/andybalholm/brotli v1.0.5 h1:8uQZIdzKmjc/iuPu7O2ioW48L81FgatrcpfFmiq/cCs=
 github.com/andybalholm/brotli v1.0.5/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/aws/aws-sdk-go-v2 v1.18.1 h1:+tefE750oAb7ZQGzla6bLkOwfcQCEtC5y2RqoqCeqKo=

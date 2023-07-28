@@ -108,6 +108,14 @@ type Comment struct {
 	Created     sql.NullTime
 }
 
+type Device struct {
+	ID           int64
+	UserID       sql.NullInt64
+	Registration sql.NullString
+	IsDeleted    sql.NullBool
+	DeviceInfo   sql.NullString
+}
+
 type Mention struct {
 	ID              int64
 	UserID          sql.NullInt64

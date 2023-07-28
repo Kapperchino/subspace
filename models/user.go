@@ -22,6 +22,7 @@ type UserInfo struct {
 }
 
 type Login struct {
-	Password string `validate:"required" json:"password"`
-	Email    string `validate:"required,email" json:"email"`
+	Password string  `validate:"required" json:"password"`
+	Email    string  `validate:"required,email" json:"email"`
+	Device   *Device `json:"device"`
 }

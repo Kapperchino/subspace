@@ -89,7 +89,13 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	queries := gen.New(u.getDB())
+	tx, err := u.getDB().Begin()
+	if err != nil {
+		log.Error().Err(err).Msg("Error creating transaction")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+	queries := gen.New(u.getDB()).WithTx(tx)
 	user, err := queries.GetUserFromEmail(c.Context(), req.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -100,6 +106,44 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	}
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
 		return c.Status(fiber.StatusBadRequest).SendStatus(400)
+	}
+
+	if req.Device != nil {
+		device, err := queries.GetDeviceByDeviceInfo(c.Context(), gen.GetDeviceByDeviceInfoParams{
+			DeviceInfo: sql.NullString{
+				String: req.Device.DeviceID,
+				Valid:  true,
+			},
+			UserID: sql.NullInt64{
+				Int64: user.ID,
+				Valid: true,
+			},
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				_, err := queries.CreateDevice(c.Context(), gen.CreateDeviceParams{
+					UserID:       sql.NullInt64{Int64: user.ID, Valid: true},
+					Registration: sql.NullString{String: req.Device.Registration, Valid: true},
+					DeviceInfo:   sql.NullString{String: req.Device.DeviceID, Valid: true},
+				})
+				if err != nil {
+					log.Error().Err(err).Msg("Error creating device")
+					return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+				}
+			} else {
+				log.Error().Err(err).Msg("Error while getting user from db")
+				return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+			}
+		} else {
+			_, err = queries.UpdateDevice(c.Context(), gen.UpdateDeviceParams{
+				Registration: sql.NullString{String: req.Device.Registration},
+				DeviceInfo:   sql.NullString{String: device.DeviceInfo.String},
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("Error creating device")
+				return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+			}
+		}
 	}
 	// Create the Claims
 	claims := jwt.MapClaims{
@@ -115,6 +159,7 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
+	tx.Commit()
 	return c.JSON(models.UserMeta{
 		UserID:      user.ID,
 		DisplayName: user.DisplayName,

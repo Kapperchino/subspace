@@ -23,5 +23,13 @@ CREATE TRIGGER trigger_comment_update
     ON comments
     FOR EACH ROW
 EXECUTE PROCEDURE notify_comments_update();
+
+CREATE TABLE devices
+(
+    id           BIGSERIAL PRIMARY KEY,
+    user_id      BIGINT REFERENCES users (id),
+    registration TEXT,
+    is_deleted   BOOL DEFAULT FALSE
+);
 -- migrate:down
 

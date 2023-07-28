@@ -93,6 +93,12 @@ func main() {
 		Validation: validation,
 	}
 
+	deviceService := server.DeviceService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
+
 	app.Use(cors.New())
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
@@ -160,6 +166,11 @@ func main() {
 	app.Get("/search/spaces/", searchService.SearchSpace)
 
 	app.Get("/search/posts/", searchService.SearchPosts)
+
+	//device
+	app.Put("/devices", deviceService.UpdateRegistration)
+
+	app.Get("/devices/users/:", deviceService.GetDevice)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

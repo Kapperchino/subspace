@@ -31,6 +31,31 @@ CREATE TYPE public.vote_type AS ENUM (
 );
 
 
+--
+-- Name: notify_comments_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_comments_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    row    RECORD;
+    output TEXT;
+BEGIN
+    row = NEW;
+    -- Forming the Output as notification. You can choose you own notification.
+    output = json_build_object('id', row.id, 'parent_id', row.parent_id, 'post_id', row.post_id);
+
+    -- Calling the pg_notify for my_table_update event with output as payload
+
+    PERFORM pg_notify('comments_update', output);
+
+    -- Returning null because it is an after trigger.
+    RETURN NULL;
+END ;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -69,6 +94,38 @@ CREATE SEQUENCE public.comments_id_seq
 --
 
 ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
+
+
+--
+-- Name: devices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.devices (
+    id bigint NOT NULL,
+    user_id bigint,
+    registration text,
+    is_deleted boolean DEFAULT false,
+    device_info text
+);
+
+
+--
+-- Name: devices_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.devices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: devices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.devices_id_seq OWNED BY public.devices.id;
 
 
 --
@@ -366,6 +423,13 @@ ALTER TABLE ONLY public.comments ALTER COLUMN id SET DEFAULT nextval('public.com
 
 
 --
+-- Name: devices id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.devices ALTER COLUMN id SET DEFAULT nextval('public.devices_id_seq'::regclass);
+
+
+--
 -- Name: mentions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -434,6 +498,14 @@ ALTER TABLE ONLY public.votes ALTER COLUMN id SET DEFAULT nextval('public.votes_
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: devices devices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_pkey PRIMARY KEY (id);
 
 
 --
@@ -565,6 +637,13 @@ ALTER TABLE ONLY public.votes
 
 
 --
+-- Name: comments trigger_comment_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_comment_update AFTER INSERT OR UPDATE ON public.comments FOR EACH ROW EXECUTE FUNCTION public.notify_comments_update();
+
+
+--
 -- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -586,6 +665,14 @@ ALTER TABLE ONLY public.comments
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT comments_self_ref FOREIGN KEY (parent_id) REFERENCES public.comments(id);
+
+
+--
+-- Name: devices devices_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.devices
+    ADD CONSTRAINT devices_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -680,4 +767,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230723191314'),
     ('20230725233323'),
     ('20230725235458'),
-    ('20230726002810');
+    ('20230726002810'),
+    ('20230727190300'),
+    ('20230727223653');

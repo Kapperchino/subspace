@@ -142,3 +142,9 @@ SELECT c.*,
 FROM comments c
          join users u on c.poster_id = u.id
 where c.id = $1;
+
+-- name: GetCommenter :one
+SELECT u.*
+from comments c
+         join users u on c.poster_id = u.id
+where c.poster_id = $1;

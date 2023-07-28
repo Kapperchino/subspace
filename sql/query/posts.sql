@@ -320,3 +320,9 @@ WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY up_votes DESC;
+
+-- name: GetPoster :one
+SELECT u.*
+from posts p
+         join users u on p.poster_id = u.id
+where p.poster_id = $1;

@@ -138,6 +138,28 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, e
 	return i, err
 }
 
+const getPoster = `-- name: GetPoster :one
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created
+from posts p
+         join users u on p.poster_id = u.id
+where p.poster_id = $1
+`
+
+func (q *Queries) GetPoster(ctx context.Context, posterID sql.NullInt64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getPoster, posterID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Password,
+		&i.Email,
+		&i.DisplayName,
+		&i.Bio,
+		&i.IsDeleted,
+		&i.Created,
+	)
+	return i, err
+}
+
 const getPostsForHomeLatest = `-- name: GetPostsForHomeLatest :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,

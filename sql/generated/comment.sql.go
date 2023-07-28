@@ -104,6 +104,28 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 	return i, err
 }
 
+const getCommenter = `-- name: GetCommenter :one
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created
+from comments c
+         join users u on c.poster_id = u.id
+where c.poster_id = $1
+`
+
+func (q *Queries) GetCommenter(ctx context.Context, posterID int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getCommenter, posterID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Password,
+		&i.Email,
+		&i.DisplayName,
+		&i.Bio,
+		&i.IsDeleted,
+		&i.Created,
+	)
+	return i, err
+}
+
 const getCommentsForComment = `-- name: GetCommentsForComment :many
 WITH RECURSIVE allCommentsForComment AS (
     -- base case starting from grandfather

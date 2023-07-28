@@ -325,4 +325,4 @@ ORDER BY up_votes DESC;
 SELECT u.*
 from posts p
          join users u on p.poster_id = u.id
-where p.poster_id = $1;
+where p.id = $1;

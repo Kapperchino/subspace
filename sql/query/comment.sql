@@ -147,4 +147,4 @@ where c.id = $1;
 SELECT u.*
 from comments c
          join users u on c.poster_id = u.id
-where c.poster_id = $1;
+where c.id = $1;

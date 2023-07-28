@@ -19,6 +19,13 @@ RETURNING *;
 -- name: GetDevicesFromCommentId :many
 SELECT *
 FROM devices
-where user_id = (SELECT c.posterId
+where user_id = (SELECT c.poster_id
                  FROM comments c
                  where c.id = $1);
+
+-- name: GetDevicesFromPostId :many
+SELECT *
+FROM devices
+where user_id = (SELECT p.poster_id
+                 FROM posts p
+                 where p.id = $1);

@@ -142,11 +142,11 @@ const getPoster = `-- name: GetPoster :one
 SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created
 from posts p
          join users u on p.poster_id = u.id
-where p.poster_id = $1
+where p.id = $1
 `
 
-func (q *Queries) GetPoster(ctx context.Context, posterID sql.NullInt64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getPoster, posterID)
+func (q *Queries) GetPoster(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getPoster, id)
 	var i User
 	err := row.Scan(
 		&i.ID,

@@ -63,13 +63,50 @@ func (q *Queries) GetDeviceByDeviceInfo(ctx context.Context, arg GetDeviceByDevi
 const getDevicesFromCommentId = `-- name: GetDevicesFromCommentId :many
 SELECT id, user_id, registration, is_deleted, device_info
 FROM devices
-where user_id = (SELECT c.posterId
+where user_id = (SELECT c.poster_id
                  FROM comments c
                  where c.id = $1)
 `
 
 func (q *Queries) GetDevicesFromCommentId(ctx context.Context, id int64) ([]Device, error) {
 	rows, err := q.db.QueryContext(ctx, getDevicesFromCommentId, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Device
+	for rows.Next() {
+		var i Device
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Registration,
+			&i.IsDeleted,
+			&i.DeviceInfo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDevicesFromPostId = `-- name: GetDevicesFromPostId :many
+SELECT id, user_id, registration, is_deleted, device_info
+FROM devices
+where user_id = (SELECT p.poster_id
+                 FROM posts p
+                 where p.id = $1)
+`
+
+func (q *Queries) GetDevicesFromPostId(ctx context.Context, id int64) ([]Device, error) {
+	rows, err := q.db.QueryContext(ctx, getDevicesFromPostId, id)
 	if err != nil {
 		return nil, err
 	}

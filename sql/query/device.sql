@@ -15,3 +15,10 @@ set registration = $1
 where device_info = $2
   AND user_id = $3
 RETURNING *;
+
+-- name: GetDevicesFromCommentId :many
+SELECT *
+FROM devices
+where user_id = (SELECT c.posterId
+                 FROM comments c
+                 where c.id = $1);

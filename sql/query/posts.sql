@@ -25,7 +25,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE p.id != 1
   AND current_timestamp - p.created
@@ -54,7 +54,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE p.id = $1
 LIMIT 1;
@@ -81,7 +81,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $3 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE s.name = $1
   AND s.parent_id = $2
@@ -111,7 +111,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE space_id = $1
   AND p.id != 1
@@ -140,7 +140,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -168,7 +168,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $3 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE s.name = $1
   AND s.parent_id = $2
@@ -198,7 +198,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $2 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE space_id = $1
   AND p.id != 1
@@ -227,7 +227,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE p.id != 1
   AND current_timestamp - p.created
@@ -256,7 +256,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
 WHERE p.poster_id = $1
   AND p.id != 1;
@@ -283,7 +283,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
 WHERE p.id != 1
@@ -313,7 +313,7 @@ SELECT p.*,
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
-         left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
 WHERE p.id != 1

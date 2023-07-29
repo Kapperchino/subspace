@@ -8,8 +8,10 @@ import (
 	"github.com/Kapperchino/subspace/util"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
+	"strings"
 	"time"
 )
 
@@ -51,8 +53,19 @@ func (u *UserService) CreateUser(c *fiber.Ctx) error {
 		Bio:         sql.NullString{String: req.Bio},
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if strings.Contains(pgErr.Message, "duplicate key value") {
+				log.Error().Err(err).Msg("Unique constraint violated")
+				if pgErr.ConstraintName == "users_email_key" {
+					return c.Status(fiber.StatusConflict).SendString("email")
+				} else if pgErr.ConstraintName == "users_display_name_key" {
+					return c.Status(fiber.StatusConflict).SendString("display_name")
+				}
+			}
+		}
 		log.Error().Err(err).Msg("Error while creating using in db")
-		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	// Create the Claims
 	claims := jwt.MapClaims{
@@ -99,7 +112,7 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB()).WithTx(tx)
 	user, err := queries.GetUserFromEmail(c.Context(), req.Email)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		log.Error().Err(err).Msg("Error while getting user from db")

@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -120,7 +121,7 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 			},
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				_, err := queries.CreateDevice(c.Context(), gen.CreateDeviceParams{
 					UserID:       sql.NullInt64{Int64: user.ID, Valid: true},
 					Registration: sql.NullString{String: req.Device.Registration, Valid: true},
@@ -136,8 +137,9 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 			}
 		} else {
 			_, err = queries.UpdateDevice(c.Context(), gen.UpdateDeviceParams{
-				Registration: sql.NullString{String: req.Device.Registration},
-				DeviceInfo:   sql.NullString{String: device.DeviceInfo.String},
+				Registration: sql.NullString{String: req.Device.Registration, Valid: true},
+				DeviceInfo:   sql.NullString{String: device.DeviceInfo.String, Valid: true},
+				UserID:       sql.NullInt64{Int64: user.ID, Valid: true},
 			})
 			if err != nil {
 				log.Error().Err(err).Msg("Error creating device")

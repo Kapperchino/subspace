@@ -50,7 +50,7 @@ SELECT c.*,
           AND v.vote_type = 'comment') AS down_votes,
        v.*
 FROM allCommentsForPost c
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
          join users u on c.poster_id = u.id;
 
@@ -103,7 +103,7 @@ SELECT c.*,
        v.*
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment';
 -- name: GetCommentsForUser :many
 SELECT c.*,

@@ -6,6 +6,7 @@ RETURNING *;
 -- name: SearchPost :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -35,6 +36,7 @@ ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC;
 -- name: GetPost :one
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -62,6 +64,7 @@ LIMIT 1;
 -- name: GetPostsForSpaceLatestByName :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -92,6 +95,7 @@ ORDER BY p.created DESC;
 -- name: GetPostsForSpaceLatest :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -121,6 +125,7 @@ ORDER BY p.created DESC;
 -- name: GetPostsForHomeLatest :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -149,6 +154,7 @@ ORDER BY p.created DESC;
 -- name: GetPostsForSpacePopularByName :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -179,6 +185,7 @@ ORDER BY up_votes DESC;
 -- name: GetPostsForSpacePopular :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -208,6 +215,7 @@ ORDER BY up_votes DESC;
 -- name: GetPostsForHomePopular :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -237,6 +245,7 @@ ORDER BY up_votes DESC;
 -- name: GetPostsForUser :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -264,6 +273,7 @@ WHERE p.poster_id = $1
 -- name: GetPostsForUserSubscriptionLatest :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -294,6 +304,7 @@ ORDER BY p.created DESC;
 -- name: GetPostsForUserSubscriptionPopular :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,

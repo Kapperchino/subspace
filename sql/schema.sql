@@ -359,7 +359,8 @@ CREATE TABLE public.users (
     display_name text NOT NULL,
     bio text,
     is_deleted boolean DEFAULT false,
-    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    picture text
 );
 
 
@@ -769,4 +770,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230725235458'),
     ('20230726002810'),
     ('20230727190300'),
-    ('20230727223653');
+    ('20230727223653'),
+    ('20230730211929');

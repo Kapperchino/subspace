@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
-RETURNING id, password, email, display_name, bio, is_deleted, created
+RETURNING id, password, email, display_name, bio, is_deleted, created, picture
 `
 
 type CreateUserParams struct {
@@ -39,12 +39,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Bio,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Picture,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, password, email, display_name, bio, is_deleted, created
+SELECT id, password, email, display_name, bio, is_deleted, created, picture
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -61,12 +62,13 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.Bio,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Picture,
 	)
 	return i, err
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT id, password, email, display_name, bio, is_deleted, created
+SELECT id, password, email, display_name, bio, is_deleted, created, picture
 FROM users
 WHERE email = $1
 LIMIT 1
@@ -83,6 +85,7 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.Bio,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Picture,
 	)
 	return i, err
 }

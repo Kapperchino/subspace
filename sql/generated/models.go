@@ -172,6 +172,7 @@ type User struct {
 	Bio         sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Picture     sql.NullString
 }
 
 type Vote struct {

@@ -105,7 +105,7 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 }
 
 const getCommenter = `-- name: GetCommenter :one
-SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture
 from comments c
          join users u on c.poster_id = u.id
 where c.id = $1
@@ -122,6 +122,7 @@ func (q *Queries) GetCommenter(ctx context.Context, id int64) (User, error) {
 		&i.Bio,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Picture,
 	)
 	return i, err
 }
@@ -175,7 +176,7 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
 `
 
@@ -296,7 +297,7 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.cont
           AND v.vote_type = 'comment') AS down_votes,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM allCommentsForPost c
-         left join votes v on c.poster_id = v.user_id and v.user_id = $2 and c.id = v.post_or_comment_id and
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
          join users u on c.poster_id = u.id
 `

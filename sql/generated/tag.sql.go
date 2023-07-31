@@ -45,6 +45,7 @@ func (q *Queries) CreateTagRelation(ctx context.Context, arg CreateTagRelationPa
 const getPostsWithTagsLatest = `-- name: GetPostsWithTagsLatest :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -92,6 +93,7 @@ type GetPostsWithTagsLatestRow struct {
 	Created         sql.NullTime
 	Ts              interface{}
 	DisplayName     string
+	UserPicture     sql.NullString
 	SpacePicture    sql.NullString
 	ParentID        int64
 	SpaceName       string
@@ -126,6 +128,7 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 			&i.Created,
 			&i.Ts,
 			&i.DisplayName,
+			&i.UserPicture,
 			&i.SpacePicture,
 			&i.ParentID,
 			&i.SpaceName,
@@ -154,6 +157,7 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 const getPostsWithTagsPopular = `-- name: GetPostsWithTagsPopular :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -201,6 +205,7 @@ type GetPostsWithTagsPopularRow struct {
 	Created         sql.NullTime
 	Ts              interface{}
 	DisplayName     string
+	UserPicture     sql.NullString
 	SpacePicture    sql.NullString
 	ParentID        int64
 	SpaceName       string
@@ -235,6 +240,7 @@ func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithT
 			&i.Created,
 			&i.Ts,
 			&i.DisplayName,
+			&i.UserPicture,
 			&i.SpacePicture,
 			&i.ParentID,
 			&i.SpaceName,

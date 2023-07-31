@@ -17,6 +17,7 @@ RETURNING *;
 -- name: GetPostsWithTagsPopular :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,
@@ -48,6 +49,7 @@ ORDER BY up_votes DESC;
 -- name: GetPostsWithTagsLatest :many
 SELECT p.*,
        u.display_name,
+       u.picture                    as user_picture,
        s.picture                    as space_picture,
        s.parent_id,
        s.name                       as space_name,

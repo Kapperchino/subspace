@@ -3,34 +3,35 @@ package models
 import "time"
 
 type PostCreation struct {
-	SpaceId     int64       `validate:"required" json:"space_id"`
-	PosterId    int64       `validate:"required" json:"poster_id"`
-	Topic       string      `validate:"max=6000" json:"topic"`
-	Body        string      `validate:"required_without_all=Content IsUpload,max=60000" json:"body"`
-	IsUpload    bool        `json:"is_upload"`
-	Content     string      `validate:"required_without_all=Body IsUpload" json:"content"`
-	ContentType ContentType `json:"content_type"`
+	SpaceId     int64        `validate:"required" json:"space_id"`
+	PosterId    int64        `validate:"required" json:"poster_id"`
+	Topic       string       `validate:"max=6000" json:"topic"`
+	Body        string       `validate:"required_without_all=Content IsUpload,max=60000" json:"body"`
+	IsUpload    bool         `json:"is_upload"`
+	Content     string       `validate:"required_without_all=Body IsUpload" json:"content"`
+	ContentType ContentType  `json:"content_type"`
+	PictureMeta *PictureMeta `json:"picture_meta"`
 }
 
 type Post struct {
-	Id            int64       `json:"id"`
-	SpaceId       int64       `json:"space_id"`
-	SpacePicture  string      `json:"space_picture"`
-	SpaceParentId int64       `json:"space_parent_id"`
-	SpaceName     string      `json:"space_name"`
-	PosterId      int64       `json:"poster_id"`
-	PosterName    string      `json:"poster_name"`
-	PosterPicture string      `json:"poster_picture"`
-	Topic         string      `json:"topic"`
-	Body          string      `json:"body"`
-	Content       string      `json:"content"`
-	IsUpload      bool        `json:"is_upload"`
-	Presigned     string      `json:"presigned"`
-	ContentType   ContentType `json:"content_type"`
-	UpVotes       int64       `json:"up_votes"`
-	DownVotes     int64       `json:"down_votes"`
-	Created       time.Time   `json:"created"`
-	Vote          *Vote       `json:"vote"`
+	Id            int64        `json:"id"`
+	SpaceId       int64        `json:"space_id"`
+	SpacePicture  *PictureMeta `json:"space_picture"`
+	SpaceParentId int64        `json:"space_parent_id"`
+	SpaceName     string       `json:"space_name"`
+	PosterId      int64        `json:"poster_id"`
+	PosterName    string       `json:"poster_name"`
+	PosterPicture *PictureMeta `json:"poster_picture"`
+	Topic         string       `json:"topic"`
+	Body          string       `json:"body"`
+	PostPicture   *PictureMeta `json:"post_picture"`
+	IsUpload      bool         `json:"is_upload"`
+	Presigned     string       `json:"presigned"`
+	ContentType   ContentType  `json:"content_type"`
+	UpVotes       int64        `json:"up_votes"`
+	DownVotes     int64        `json:"down_votes"`
+	Created       time.Time    `json:"created"`
+	Vote          *Vote        `json:"vote"`
 }
 
 type ContentType string

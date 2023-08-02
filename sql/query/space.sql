@@ -24,14 +24,15 @@ WHERE su.user_id = $1
   AND su.is_deleted = false;
 
 -- name: SearchSpace :many
-SELECT *
-FROM spaces
+SELECT sqlc.embed(s), sqlc.embed(p)
+FROM spaces s
+         LEFT JOIN pictures p on s.small_picture_id = p.id
 WHERE id != 1
 ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC;
 
 -- name: CreateSpace :one
-INSERT INTO spaces (name, description, parent_id, picture)
-VALUES ($1, $2, $3, $4)
+INSERT INTO spaces (name, description, parent_id, small_picture_id, background_picture_id)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: DeleteSpace :exec

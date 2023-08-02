@@ -15,10 +15,12 @@ VALUES ($1, $2)
 RETURNING *;
 
 -- name: GetPostsWithTagsPopular :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(post_pic),
+       sqlc.embed(v),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -32,8 +34,7 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join tags_relations t on t.post_or_comment_id = p.id
          join tags t1 on t.tag_id = t1.id
@@ -41,16 +42,22 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY up_votes DESC;
 
 -- name: GetPostsWithTagsLatest :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -64,8 +71,7 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join tags_relations t on t.post_or_comment_id = p.id
          join tags t1 on t.tag_id = t1.id
@@ -73,6 +79,10 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)

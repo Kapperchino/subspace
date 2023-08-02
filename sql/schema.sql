@@ -71,7 +71,6 @@ CREATE TABLE public.comments (
     parent_id bigint,
     body text NOT NULL,
     content_type public.content_type DEFAULT 'text'::public.content_type,
-    content text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -159,6 +158,39 @@ ALTER SEQUENCE public.mentions_id_seq OWNED BY public.mentions.id;
 
 
 --
+-- Name: pictures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pictures (
+    id bigint NOT NULL,
+    post_id bigint,
+    comment_id bigint,
+    url text NOT NULL,
+    width bigint NOT NULL,
+    height bigint NOT NULL
+);
+
+
+--
+-- Name: pictures_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pictures_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pictures_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.pictures_id_seq OWNED BY public.pictures.id;
+
+
+--
 -- Name: posts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -169,7 +201,6 @@ CREATE TABLE public.posts (
     topic text,
     body text,
     content_type public.content_type DEFAULT 'text'::public.content_type,
-    content text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(body, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(topic, ''::text)), 'B'::"char"))) STORED
@@ -213,10 +244,11 @@ CREATE TABLE public.spaces (
     parent_id bigint NOT NULL,
     name text NOT NULL,
     description text,
-    picture text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(description, ''::text)), 'B'::"char"))) STORED
+    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(description, ''::text)), 'B'::"char"))) STORED,
+    small_picture_id bigint,
+    background_picture_id bigint
 );
 
 
@@ -360,7 +392,7 @@ CREATE TABLE public.users (
     bio text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    picture text
+    picture_id bigint
 );
 
 
@@ -435,6 +467,13 @@ ALTER TABLE ONLY public.devices ALTER COLUMN id SET DEFAULT nextval('public.devi
 --
 
 ALTER TABLE ONLY public.mentions ALTER COLUMN id SET DEFAULT nextval('public.mentions_id_seq'::regclass);
+
+
+--
+-- Name: pictures id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pictures ALTER COLUMN id SET DEFAULT nextval('public.pictures_id_seq'::regclass);
 
 
 --
@@ -515,6 +554,14 @@ ALTER TABLE ONLY public.devices
 
 ALTER TABLE ONLY public.mentions
     ADD CONSTRAINT mentions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pictures pictures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pictures
+    ADD CONSTRAINT pictures_pkey PRIMARY KEY (id);
 
 
 --
@@ -771,4 +818,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230726002810'),
     ('20230727190300'),
     ('20230727223653'),
-    ('20230730211929');
+    ('20230730211929'),
+    ('20230801224840');

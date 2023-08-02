@@ -51,13 +51,6 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if req.ContentType == "" {
 		req.ContentType = models.CONTENT_TEXT
 	}
-	presigned, fileName, err := u.getPresigned(req.IsUpload, c)
-	var content = ""
-	if presigned != "" {
-		content = "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
-	} else {
-		content = req.Content
-	}
 
 	var tags []gen.Tag
 	if req.Body != "" {
@@ -105,10 +98,6 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 			String: req.Body,
 			Valid:  req.Body != "",
 		},
-		Content: sql.NullString{
-			String: content,
-			Valid:  content != "",
-		},
 		ContentType: gen.NullContentType{
 			ContentType: gen.ContentType(req.ContentType),
 			Valid:       req.ContentType != "",
@@ -117,6 +106,29 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+
+	presigned, fileName, err := u.getPresigned(req.IsUpload, c)
+	var picMeta *gen.Picture = nil
+	if req.PictureMeta != nil {
+		var content = ""
+		if presigned != "" {
+			content = "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+		} else {
+			content = req.Content
+		}
+		res, err := queries.CreatePicture(c.Context(), gen.CreatePictureParams{
+			PostID:    sql.NullInt64{Int64: post.ID, Valid: true},
+			CommentID: sql.NullInt64{Valid: false},
+			Url:       content,
+			Width:     req.PictureMeta.Width,
+			Height:    req.PictureMeta.Height,
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		picMeta = &res
 	}
 
 	for _, tag := range tags {
@@ -138,14 +150,18 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Post{
-		Id:          post.ID,
-		SpaceId:     post.SpaceID.Int64,
-		PosterId:    post.PosterID.Int64,
-		Body:        post.Body.String,
-		Topic:       post.Topic.String,
-		Content:     post.Content.String,
-		IsUpload:    req.IsUpload,
-		Presigned:   presigned,
+		Id:        post.ID,
+		SpaceId:   post.SpaceID.Int64,
+		PosterId:  post.PosterID.Int64,
+		Body:      post.Body.String,
+		Topic:     post.Topic.String,
+		IsUpload:  req.IsUpload,
+		Presigned: presigned,
+		PostPicture: &models.PictureMeta{
+			Url:    picMeta.Url,
+			Width:  picMeta.Width,
+			Height: picMeta.Height,
+		},
 		ContentType: models.ContentType(post.ContentType.ContentType),
 		UpVotes:     0,
 		DownVotes:   0,
@@ -177,31 +193,32 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	var vote *models.Vote
-	if res.ID_2.Valid {
+	if res.Vote.ID != 0 {
 		vote = &models.Vote{
-			VoteId:          res.ID_2.Int64,
-			UserId:          res.UserID.Int64,
-			PostOrCommentId: res.PostOrCommentID.Int64,
-			IsUpVote:        res.IsUpVote.Bool,
-			VoteType:        models.VoteType(res.VoteType.VoteType),
-			IsDeleted:       res.IsDeleted_2.Bool,
+			VoteId:          res.Vote.ID,
+			UserId:          res.Vote.UserID,
+			PostOrCommentId: res.Vote.PostOrCommentID,
+			IsUpVote:        res.Vote.IsUpVote.Bool,
+			VoteType:        models.VoteType(res.Vote.VoteType),
+			IsDeleted:       res.Vote.IsDeleted.Bool,
 		}
 	} else {
 		vote = nil
 	}
 	return c.JSON(models.Post{
-		Id:            res.ID,
-		SpaceId:       res.SpaceID.Int64,
-		PosterId:      res.PosterID.Int64,
+		Id:            res.Post.ID,
+		SpaceId:       res.Post.SpaceID.Int64,
+		PosterId:      res.Post.PosterID.Int64,
 		PosterName:    res.DisplayName,
-		SpacePicture:  res.SpacePicture.String,
-		Topic:         res.Topic.String,
-		Body:          res.Body.String,
-		ContentType:   models.ContentType(res.ContentType.ContentType),
-		Content:       res.Content.String,
+		Topic:         res.Post.Topic.String,
+		Body:          res.Post.Body.String,
+		ContentType:   models.ContentType(res.Post.ContentType.ContentType),
 		UpVotes:       res.UpVotes,
 		DownVotes:     res.DownVotes,
-		Created:       res.Created.Time,
+		PosterPicture: getPictureMeta(res.Picture),
+		SpacePicture:  getPictureMeta(res.Picture_2),
+		PostPicture:   getPictureMeta(res.Picture_3),
+		Created:       res.Post.Created.Time,
 		Vote:          vote,
 		SpaceParentId: res.ParentID,
 		SpaceName:     res.SpaceName,
@@ -334,31 +351,32 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic.String,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
-				Body:          post.Body.String,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
@@ -384,32 +402,33 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic.String,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
@@ -436,31 +455,32 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic.String,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
-				Body:          post.Body.String,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
@@ -484,32 +504,33 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic.String,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
@@ -535,32 +556,32 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 		list = append(list, models.Post{
-			Id:            post.ID,
-			SpaceId:       post.SpaceID.Int64,
-			PosterId:      post.PosterID.Int64,
-			SpacePicture:  post.SpacePicture.String,
-			Topic:         post.Topic.String,
-			Content:       post.Content.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
 			PosterName:    post.DisplayName,
-			PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
@@ -585,31 +606,32 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic.String,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
-				Body:          post.Body.String,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
@@ -631,32 +653,33 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic.String,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
@@ -681,31 +704,32 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:           post.ID,
-				SpaceId:      post.SpaceID.Int64,
-				PosterId:     post.PosterID.Int64,
-				SpacePicture: post.SpacePicture.String,
-				Topic:        post.Topic.String,
-				Content:      post.Content.String,
-				PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
-				Body:          post.Body.String,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
+				PosterName:    post.DisplayName,
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
@@ -727,32 +751,33 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic.String,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
@@ -778,32 +803,32 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:            post.ID,
-				SpaceId:       post.SpaceID.Int64,
-				PosterId:      post.PosterID.Int64,
-				SpacePicture:  post.SpacePicture.String,
-				Topic:         post.Topic.String,
-				Content:       post.Content.String,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
 				PosterName:    post.DisplayName,
-				PosterPicture: post.UserPicture.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
-				Body:          post.Body.String,
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
@@ -826,36 +851,48 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Post{
-			Id:           post.ID,
-			SpaceId:      post.SpaceID.Int64,
-			PosterId:     post.PosterID.Int64,
-			SpacePicture: post.SpacePicture.String,
-			Topic:        post.Topic.String,
-			Content:      post.Content.String,
-			PosterName:   post.DisplayName, PosterPicture: post.UserPicture.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
-			Body:          post.Body.String,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
+			PosterName:    post.DisplayName,
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
 	}
 	return list, nil
+}
+
+func getPictureMeta(picture gen.Picture) *models.PictureMeta {
+	if picture.ID == 0 {
+		return nil
+	}
+	return &models.PictureMeta{
+		Url:    picture.Url,
+		Width:  picture.Width,
+		Height: picture.Height,
+	}
 }

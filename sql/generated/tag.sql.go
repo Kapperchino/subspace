@@ -43,10 +43,12 @@ func (q *Queries) CreateTagRelation(ctx context.Context, arg CreateTagRelationPa
 }
 
 const getPostsWithTagsLatest = `-- name: GetPostsWithTagsLatest :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts,
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
+       space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
+       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -60,8 +62,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join tags_relations t on t.post_or_comment_id = p.id
          join tags t1 on t.tag_id = t1.id
@@ -69,6 +70,10 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -82,29 +87,16 @@ type GetPostsWithTagsLatestParams struct {
 }
 
 type GetPostsWithTagsLatestRow struct {
-	ID              int64
-	SpaceID         sql.NullInt64
-	PosterID        sql.NullInt64
-	Topic           sql.NullString
-	Body            sql.NullString
-	ContentType     NullContentType
-	Content         sql.NullString
-	IsDeleted       sql.NullBool
-	Created         sql.NullTime
-	Ts              interface{}
-	DisplayName     string
-	UserPicture     sql.NullString
-	SpacePicture    sql.NullString
-	ParentID        int64
-	SpaceName       string
-	UpVotes         int64
-	DownVotes       int64
-	ID_2            sql.NullInt64
-	IsUpVote        sql.NullBool
-	UserID          sql.NullInt64
-	PostOrCommentID sql.NullInt64
-	VoteType        NullVoteType
-	IsDeleted_2     sql.NullBool
+	Post        Post
+	DisplayName string
+	Picture     Picture
+	Picture_2   Picture
+	Vote        Vote
+	Picture_3   Picture
+	ParentID    int64
+	SpaceName   string
+	UpVotes     int64
+	DownVotes   int64
 }
 
 func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTagsLatestParams) ([]GetPostsWithTagsLatestRow, error) {
@@ -117,29 +109,44 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 	for rows.Next() {
 		var i GetPostsWithTagsLatestRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.SpaceID,
-			&i.PosterID,
-			&i.Topic,
-			&i.Body,
-			&i.ContentType,
-			&i.Content,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Ts,
+			&i.Post.ID,
+			&i.Post.SpaceID,
+			&i.Post.PosterID,
+			&i.Post.Topic,
+			&i.Post.Body,
+			&i.Post.ContentType,
+			&i.Post.IsDeleted,
+			&i.Post.Created,
+			&i.Post.Ts,
 			&i.DisplayName,
-			&i.UserPicture,
-			&i.SpacePicture,
+			&i.Picture.ID,
+			&i.Picture.PostID,
+			&i.Picture.CommentID,
+			&i.Picture.Url,
+			&i.Picture.Width,
+			&i.Picture.Height,
+			&i.Picture_2.ID,
+			&i.Picture_2.PostID,
+			&i.Picture_2.CommentID,
+			&i.Picture_2.Url,
+			&i.Picture_2.Width,
+			&i.Picture_2.Height,
+			&i.Vote.ID,
+			&i.Vote.IsUpVote,
+			&i.Vote.UserID,
+			&i.Vote.PostOrCommentID,
+			&i.Vote.VoteType,
+			&i.Vote.IsDeleted,
+			&i.Picture_3.ID,
+			&i.Picture_3.PostID,
+			&i.Picture_3.CommentID,
+			&i.Picture_3.Url,
+			&i.Picture_3.Width,
+			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
 			&i.DownVotes,
-			&i.ID_2,
-			&i.IsUpVote,
-			&i.UserID,
-			&i.PostOrCommentID,
-			&i.VoteType,
-			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}
@@ -155,10 +162,12 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 }
 
 const getPostsWithTagsPopular = `-- name: GetPostsWithTagsPopular :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content, p.is_deleted, p.created, p.ts,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts,
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
+       space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
+       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -172,8 +181,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.content
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join tags_relations t on t.post_or_comment_id = p.id
          join tags t1 on t.tag_id = t1.id
@@ -181,6 +189,10 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -194,29 +206,16 @@ type GetPostsWithTagsPopularParams struct {
 }
 
 type GetPostsWithTagsPopularRow struct {
-	ID              int64
-	SpaceID         sql.NullInt64
-	PosterID        sql.NullInt64
-	Topic           sql.NullString
-	Body            sql.NullString
-	ContentType     NullContentType
-	Content         sql.NullString
-	IsDeleted       sql.NullBool
-	Created         sql.NullTime
-	Ts              interface{}
-	DisplayName     string
-	UserPicture     sql.NullString
-	SpacePicture    sql.NullString
-	ParentID        int64
-	SpaceName       string
-	UpVotes         int64
-	DownVotes       int64
-	ID_2            sql.NullInt64
-	IsUpVote        sql.NullBool
-	UserID          sql.NullInt64
-	PostOrCommentID sql.NullInt64
-	VoteType        NullVoteType
-	IsDeleted_2     sql.NullBool
+	Post        Post
+	DisplayName string
+	Picture     Picture
+	Picture_2   Picture
+	Picture_3   Picture
+	Vote        Vote
+	ParentID    int64
+	SpaceName   string
+	UpVotes     int64
+	DownVotes   int64
 }
 
 func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithTagsPopularParams) ([]GetPostsWithTagsPopularRow, error) {
@@ -229,29 +228,44 @@ func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithT
 	for rows.Next() {
 		var i GetPostsWithTagsPopularRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.SpaceID,
-			&i.PosterID,
-			&i.Topic,
-			&i.Body,
-			&i.ContentType,
-			&i.Content,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Ts,
+			&i.Post.ID,
+			&i.Post.SpaceID,
+			&i.Post.PosterID,
+			&i.Post.Topic,
+			&i.Post.Body,
+			&i.Post.ContentType,
+			&i.Post.IsDeleted,
+			&i.Post.Created,
+			&i.Post.Ts,
 			&i.DisplayName,
-			&i.UserPicture,
-			&i.SpacePicture,
+			&i.Picture.ID,
+			&i.Picture.PostID,
+			&i.Picture.CommentID,
+			&i.Picture.Url,
+			&i.Picture.Width,
+			&i.Picture.Height,
+			&i.Picture_2.ID,
+			&i.Picture_2.PostID,
+			&i.Picture_2.CommentID,
+			&i.Picture_2.Url,
+			&i.Picture_2.Width,
+			&i.Picture_2.Height,
+			&i.Picture_3.ID,
+			&i.Picture_3.PostID,
+			&i.Picture_3.CommentID,
+			&i.Picture_3.Url,
+			&i.Picture_3.Width,
+			&i.Picture_3.Height,
+			&i.Vote.ID,
+			&i.Vote.IsUpVote,
+			&i.Vote.UserID,
+			&i.Vote.PostOrCommentID,
+			&i.Vote.VoteType,
+			&i.Vote.IsDeleted,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
 			&i.DownVotes,
-			&i.ID_2,
-			&i.IsUpVote,
-			&i.UserID,
-			&i.PostOrCommentID,
-			&i.VoteType,
-			&i.IsDeleted_2,
 		); err != nil {
 			return nil, err
 		}

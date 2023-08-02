@@ -1,13 +1,15 @@
 -- name: CreatePost :one
-INSERT INTO posts (space_id, poster_id, topic, body, content, content_type)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO posts (space_id, poster_id, topic, body, content_type)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: SearchPost :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -21,23 +23,27 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC;
 
 -- name: GetPost :one
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -51,21 +57,25 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id = $1
 LIMIT 1;
 
 -- name: GetPostsForSpaceLatestByName :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -79,13 +89,15 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -93,10 +105,12 @@ WHERE s.name = $1
 ORDER BY p.created DESC;
 
 -- name: GetPostsForSpaceLatest :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -110,23 +124,27 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY p.created DESC;
 
 -- name: GetPostsForHomeLatest :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -140,22 +158,26 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC;
 
 -- name: GetPostsForSpacePopularByName :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -169,13 +191,15 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -183,10 +207,12 @@ WHERE s.name = $1
 ORDER BY up_votes DESC;
 
 -- name: GetPostsForSpacePopular :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -200,23 +226,27 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY up_votes DESC;
 
 -- name: GetPostsForHomePopular :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -230,23 +260,27 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY up_votes DESC;
 
 -- name: GetPostsForUser :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -260,21 +294,25 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.poster_id = $1
   AND p.id != 1;
 
 -- name: GetPostsForUserSubscriptionLatest :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -288,24 +326,28 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC;
 
 -- name: GetPostsForUserSubscriptionPopular :many
-SELECT p.*,
+SELECT sqlc.embed(p),
        u.display_name,
-       u.picture                    as user_picture,
-       s.picture                    as space_picture,
+       sqlc.embed(user_pic),
+       sqlc.embed(space_small_pic),
+       sqlc.embed(v),
+       sqlc.embed(post_pic),
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -319,14 +361,16 @@ SELECT p.*,
         WHERE v.post_or_comment_id = p.id
           AND v.is_deleted = false
           AND v.is_up_vote = false
-          AND v.vote_type = 'post') AS down_votes,
-       v.*
+          AND v.vote_type = 'post') AS down_votes
 FROM posts p
          join users u on p.poster_id = u.id
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
+         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures post_pic on p.id = post_pic.post_id
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)

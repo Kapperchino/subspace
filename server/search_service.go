@@ -46,11 +46,15 @@ func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 	var list []models.Space
 	for _, space := range res {
 		list = append(list, models.Space{
-			ID:          space.ID,
-			ParentID:    space.ParentID,
-			Name:        space.Name,
-			Description: space.Description.String,
-			Picture:     space.Picture.String,
+			ID:          space.Space.ID,
+			ParentID:    space.Space.ParentID,
+			Name:        space.Space.Name,
+			Description: space.Space.Description.String,
+			SmallPicture: &models.PictureMeta{
+				Url:    space.Picture.Url,
+				Width:  space.Picture.Width,
+				Height: space.Picture.Height,
+			},
 		})
 	}
 	return c.JSON(list)
@@ -82,34 +86,35 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 		var list []models.Post
 		for _, post := range res {
 			var vote *models.Vote
-			if post.ID_2.Valid {
+			if post.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          post.ID_2.Int64,
-					UserId:          post.UserID.Int64,
-					PostOrCommentId: post.PostOrCommentID.Int64,
-					IsUpVote:        post.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.VoteType.VoteType),
-					IsDeleted:       post.IsDeleted_2.Bool,
+					VoteId:          post.Vote.ID,
+					UserId:          post.Vote.UserID,
+					PostOrCommentId: post.Vote.PostOrCommentID,
+					IsUpVote:        post.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(post.Vote.VoteType),
+					IsDeleted:       post.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Post{
-				Id:            post.ID,
-				SpaceId:       post.SpaceID.Int64,
-				SpacePicture:  post.SpacePicture.String,
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-				PosterId:      post.PosterID.Int64,
+				Id:            post.Post.ID,
+				SpaceId:       post.Post.SpaceID.Int64,
+				PosterId:      post.Post.PosterID.Int64,
+				Topic:         post.Post.Topic.String,
 				PosterName:    post.DisplayName,
-				Topic:         post.Topic.String,
-				Body:          post.Body.String,
-				Content:       post.Content.String,
-				ContentType:   models.ContentType(post.ContentType.ContentType),
+				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				Created:       post.Created.Time,
+				PosterPicture: getPictureMeta(post.Picture),
+				SpacePicture:  getPictureMeta(post.Picture_2),
+				PostPicture:   getPictureMeta(post.Picture_3),
+				Created:       post.Post.Created.Time,
 				Vote:          vote,
+				SpaceParentId: post.ParentID,
+				SpaceName:     post.SpaceName,
 			})
 		}
 		return c.JSON(list)
@@ -129,34 +134,35 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 	var list []models.Post
 	for _, post := range res {
 		var vote *models.Vote
-		if post.ID_2.Valid {
+		if post.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          post.ID_2.Int64,
-				UserId:          post.UserID.Int64,
-				PostOrCommentId: post.PostOrCommentID.Int64,
-				IsUpVote:        post.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.VoteType.VoteType),
-				IsDeleted:       post.IsDeleted_2.Bool,
+				VoteId:          post.Vote.ID,
+				UserId:          post.Vote.UserID,
+				PostOrCommentId: post.Vote.PostOrCommentID,
+				IsUpVote:        post.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(post.Vote.VoteType),
+				IsDeleted:       post.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 		list = append(list, models.Post{
-			Id:            post.ID,
-			SpaceId:       post.SpaceID.Int64,
-			SpacePicture:  post.SpacePicture.String,
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-			PosterId:      post.PosterID.Int64,
+			Id:            post.Post.ID,
+			SpaceId:       post.Post.SpaceID.Int64,
+			PosterId:      post.Post.PosterID.Int64,
+			Topic:         post.Post.Topic.String,
 			PosterName:    post.DisplayName,
-			Topic:         post.Topic.String,
-			Body:          post.Body.String,
-			Content:       post.Content.String,
-			ContentType:   models.ContentType(post.ContentType.ContentType),
+			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
+			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			Created:       post.Created.Time,
+			PosterPicture: getPictureMeta(post.Picture),
+			SpacePicture:  getPictureMeta(post.Picture_2),
+			PostPicture:   getPictureMeta(post.Picture_3),
+			Created:       post.Post.Created.Time,
 			Vote:          vote,
+			SpaceParentId: post.ParentID,
+			SpaceName:     post.SpaceName,
 		})
 	}
 	return c.JSON(list)

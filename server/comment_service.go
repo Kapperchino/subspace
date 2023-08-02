@@ -50,10 +50,6 @@ func (u *CommentService) CreateComment(c *fiber.Ctx) error {
 		PosterID: req.PosterId,
 		PostID:   req.PostId,
 		Body:     req.Body,
-		Content: sql.NullString{
-			String: req.Content,
-			Valid:  true,
-		},
 		ContentType: gen.NullContentType{
 			ContentType: gen.ContentType(req.ContentType),
 			Valid:       req.ContentType != "",
@@ -69,7 +65,6 @@ func (u *CommentService) CreateComment(c *fiber.Ctx) error {
 		ParentId:    comment.ParentID.Int64,
 		PostId:      comment.PostID,
 		Body:        comment.Body,
-		Content:     comment.Content.String,
 		ContentType: models.ContentType(comment.ContentType.ContentType),
 		UpVotes:     0,
 		DownVotes:   0,
@@ -96,16 +91,16 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
+
 	return c.JSON(models.Comment{
-		Id:          res.ID,
-		PosterId:    res.PosterID,
-		Body:        res.Body,
-		ParentId:    res.ParentID.Int64,
-		ContentType: models.ContentType(res.ContentType.ContentType),
-		Content:     res.Content.String,
+		Id:          res.Comment.ID,
+		PosterId:    res.Comment.PosterID,
+		Body:        res.Comment.Body,
+		ParentId:    res.Comment.ParentID.Int64,
+		ContentType: models.ContentType(res.Comment.ContentType.ContentType),
 		UpVotes:     res.UpVotes,
 		DownVotes:   res.DownVotes,
-		Created:     res.Created.Time,
+		Created:     res.Comment.Created.Time,
 	})
 }
 
@@ -138,30 +133,29 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		var list []models.Comment
 		for _, comment := range res {
 			var vote *models.Vote
-			if comment.ID_2.Valid {
+			if comment.Vote.ID != 0 {
 				vote = &models.Vote{
-					VoteId:          comment.ID_2.Int64,
-					UserId:          comment.UserID.Int64,
-					PostOrCommentId: comment.PostOrCommentID.Int64,
-					IsUpVote:        comment.IsUpVote.Bool,
-					VoteType:        models.VoteType(comment.VoteType.VoteType),
-					IsDeleted:       comment.IsDeleted_2.Bool,
+					VoteId:          comment.Vote.ID,
+					UserId:          comment.Vote.UserID,
+					PostOrCommentId: comment.Vote.PostOrCommentID,
+					IsUpVote:        comment.Vote.IsUpVote.Bool,
+					VoteType:        models.VoteType(comment.Vote.VoteType),
+					IsDeleted:       comment.Vote.IsDeleted.Bool,
 				}
 			} else {
 				vote = nil
 			}
 			list = append(list, models.Comment{
-				Id:          comment.ID,
-				PosterId:    comment.PosterID,
-				PostId:      comment.PostID,
-				ParentId:    comment.ParentID.Int64,
+				Id:          comment.Comment.ID,
+				PosterId:    comment.Comment.PosterID,
+				PostId:      comment.Comment.PostID,
+				ParentId:    comment.Comment.ParentID.Int64,
 				PosterName:  comment.DisplayName,
-				Body:        comment.Body,
-				Content:     comment.Content.String,
-				ContentType: models.ContentType(comment.ContentType.ContentType),
+				Body:        comment.Comment.Body,
+				ContentType: models.ContentType(comment.Comment.ContentType.ContentType),
 				UpVotes:     comment.UpVotes,
 				DownVotes:   comment.DownVotes,
-				Created:     comment.Created.Time,
+				Created:     comment.Comment.Created.Time,
 				Vote:        vote,
 			})
 		}
@@ -181,30 +175,30 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	var list []models.Comment
 	for _, comment := range res {
 		var vote *models.Vote
-		if comment.ID_2.Valid {
+		if comment.Vote.ID != 0 {
 			vote = &models.Vote{
-				VoteId:          comment.ID_2.Int64,
-				UserId:          comment.UserID.Int64,
-				PostOrCommentId: comment.PostOrCommentID.Int64,
-				IsUpVote:        comment.IsUpVote.Bool,
-				VoteType:        models.VoteType(comment.VoteType.VoteType),
-				IsDeleted:       comment.IsDeleted_2.Bool,
+				VoteId:          comment.Vote.ID,
+				UserId:          comment.Vote.UserID,
+				PostOrCommentId: comment.Vote.PostOrCommentID,
+				IsUpVote:        comment.Vote.IsUpVote.Bool,
+				VoteType:        models.VoteType(comment.Vote.VoteType),
+				IsDeleted:       comment.Vote.IsDeleted.Bool,
 			}
 		} else {
 			vote = nil
 		}
 
 		list = append(list, models.Comment{
-			Id:          comment.ID,
-			PosterId:    comment.PosterID,
-			PostId:      comment.PostID,
-			ParentId:    comment.ParentID.Int64,
-			Body:        comment.Body,
-			Content:     comment.Content.String,
-			ContentType: models.ContentType(comment.ContentType.ContentType),
+			Id:          comment.Comment.ID,
+			PosterId:    comment.Comment.PosterID,
+			PostId:      comment.Comment.PostID,
+			ParentId:    comment.Comment.ParentID.Int64,
+			PosterName:  comment.DisplayName,
+			Body:        comment.Comment.Body,
+			ContentType: models.ContentType(comment.Comment.ContentType.ContentType),
 			UpVotes:     comment.UpVotes,
 			DownVotes:   comment.DownVotes,
-			Created:     comment.Created.Time,
+			Created:     comment.Comment.Created.Time,
 			Vote:        vote,
 		})
 	}

@@ -40,10 +40,10 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 	space, err := queries.CreateSpace(c.Context(), gen.CreateSpaceParams{
-		Name:        req.Name,
-		Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
-		ParentID:    req.Parent,
-		Picture:     sql.NullString{String: req.Picture, Valid: req.Picture != ""},
+		Name:           req.Name,
+		Description:    sql.NullString{String: req.Description, Valid: req.Description != ""},
+		ParentID:       req.Parent,
+		SmallPictureID: req.SmallPicture.Url,
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")

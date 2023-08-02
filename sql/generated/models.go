@@ -103,7 +103,6 @@ type Comment struct {
 	ParentID    sql.NullInt64
 	Body        string
 	ContentType NullContentType
-	Content     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 }
@@ -122,6 +121,22 @@ type Mention struct {
 	UserMentionedID sql.NullInt64
 }
 
+type Picture struct {
+	ID        int64
+	PostID    sql.NullInt64
+	CommentID sql.NullInt64
+	Url       string
+	Width     int64
+	Height    int64
+}
+
+type Picturerelation struct {
+	ID        int64
+	PictureID sql.NullInt64
+	PostID    sql.NullInt64
+	CommentID sql.NullInt64
+}
+
 type Post struct {
 	ID          int64
 	SpaceID     sql.NullInt64
@@ -129,21 +144,21 @@ type Post struct {
 	Topic       sql.NullString
 	Body        sql.NullString
 	ContentType NullContentType
-	Content     sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 	Ts          interface{}
 }
 
 type Space struct {
-	ID          int64
-	ParentID    int64
-	Name        string
-	Description sql.NullString
-	Picture     sql.NullString
-	IsDeleted   sql.NullBool
-	Created     sql.NullTime
-	Ts          interface{}
+	ID                  int64
+	ParentID            int64
+	Name                string
+	Description         sql.NullString
+	IsDeleted           sql.NullBool
+	Created             sql.NullTime
+	Ts                  interface{}
+	SmallPictureID      sql.NullInt64
+	BackgroundPictureID sql.NullInt64
 }
 
 type Subscription struct {
@@ -172,7 +187,7 @@ type User struct {
 	Bio         sql.NullString
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
-	Picture     sql.NullString
+	PictureID   sql.NullInt64
 }
 
 type Vote struct {

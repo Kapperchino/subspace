@@ -40,21 +40,29 @@ func (u *SpaceService) CreateSpace(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 	space, err := queries.CreateSpace(c.Context(), gen.CreateSpaceParams{
-		Name:           req.Name,
-		Description:    sql.NullString{String: req.Description, Valid: req.Description != ""},
-		ParentID:       req.Parent,
-		SmallPictureID: req.SmallPicture.Url,
+		Name:        req.Name,
+		Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
+		ParentID:    req.Parent,
+		SmallPictureID: sql.NullInt64{
+			Int64: req.SmallPictureId,
+			Valid: req.SmallPictureId != 0,
+		},
+		BackgroundPictureID: sql.NullInt64{
+			Int64: req.BackgroundPictureId,
+			Valid: req.BackgroundPictureId != 0,
+		},
 	})
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	return c.JSON(models.Space{
-		ID:          space.ID,
-		ParentID:    space.ParentID,
-		Name:        space.Name,
-		Picture:     space.Picture.String,
-		Description: space.Description.String,
+	return c.JSON(models.SpaceCreationRes{
+		ID:                  space.ID,
+		ParentID:            space.ParentID,
+		Name:                space.Name,
+		BackgroundPictureId: space.BackgroundPictureID.Int64,
+		SmallPictureId:      space.SmallPictureID.Int64,
+		Description:         space.Description.String,
 	})
 }
 
@@ -75,11 +83,12 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Space{
-		ID:          res.ID,
-		ParentID:    res.ParentID,
-		Name:        res.Name,
-		Picture:     res.Picture.String,
-		Description: res.Description.String,
+		ID:                res.Space.ID,
+		ParentID:          res.Space.ParentID,
+		Name:              res.Space.Name,
+		SmallPicture:      getPictureMeta(res.Picture),
+		BackgroundPicture: getPictureMeta(res.Picture_2),
+		Description:       res.Space.Description.String,
 	})
 }
 
@@ -103,11 +112,12 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		var spaces []models.Space
 		for _, space := range res {
 			spaces = append(spaces, models.Space{
-				ID:          space.ID,
-				ParentID:    space.ParentID,
-				Picture:     space.Picture.String,
-				Name:        space.Name,
-				Description: space.Description.String,
+				ID:                space.Space.ID,
+				ParentID:          space.Space.ParentID,
+				Name:              space.Space.Name,
+				SmallPicture:      getPictureMeta(space.Picture),
+				BackgroundPicture: getPictureMeta(space.Picture_2),
+				Description:       space.Space.Description.String,
 			})
 		}
 		return c.JSON(spaces)
@@ -125,11 +135,12 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Space{
-		ID:          res.ID,
-		ParentID:    res.ParentID,
-		Name:        res.Name,
-		Picture:     res.Picture.String,
-		Description: res.Description.String,
+		ID:                res.Space.ID,
+		ParentID:          res.Space.ParentID,
+		Name:              res.Space.Name,
+		SmallPicture:      getPictureMeta(res.Picture),
+		BackgroundPicture: getPictureMeta(res.Picture_2),
+		Description:       res.Space.Description.String,
 	})
 }
 
@@ -151,11 +162,12 @@ func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
 	var spaces []models.Space
 	for _, space := range res {
 		spaces = append(spaces, models.Space{
-			ID:          space.ID,
-			ParentID:    space.ParentID,
-			Name:        space.Name,
-			Description: space.Description.String,
-			Picture:     space.Picture.String,
+			ID:                space.Space.ID,
+			ParentID:          space.Space.ParentID,
+			Name:              space.Space.Name,
+			SmallPicture:      getPictureMeta(space.Picture),
+			BackgroundPicture: getPictureMeta(space.Picture_2),
+			Description:       space.Space.Description.String,
 		})
 	}
 	return c.JSON(spaces)

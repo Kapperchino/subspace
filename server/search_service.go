@@ -85,18 +85,9 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 		}
 		var list []models.Post
 		for _, post := range res {
-			var vote *models.Vote
-			if post.Vote.ID != 0 {
-				vote = &models.Vote{
-					VoteId:          post.Vote.ID,
-					UserId:          post.Vote.UserID,
-					PostOrCommentId: post.Vote.PostOrCommentID,
-					IsUpVote:        post.Vote.IsUpVote.Bool,
-					VoteType:        models.VoteType(post.Vote.VoteType),
-					IsDeleted:       post.Vote.IsDeleted.Bool,
-				}
-			} else {
-				vote = nil
+			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			if err != nil {
+				return err
 			}
 			list = append(list, models.Post{
 				Id:            post.Post.ID,
@@ -110,9 +101,9 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 				DownVotes:     post.DownVotes,
 				PosterPicture: getPictureMeta(post.Picture),
 				SpacePicture:  getPictureMeta(post.Picture_2),
-				PostPicture:   getPictureMeta(post.Picture_3),
+				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          vote,
+				Vote:          getVote(post.Vote),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -133,18 +124,9 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 	}
 	var list []models.Post
 	for _, post := range res {
-		var vote *models.Vote
-		if post.Vote.ID != 0 {
-			vote = &models.Vote{
-				VoteId:          post.Vote.ID,
-				UserId:          post.Vote.UserID,
-				PostOrCommentId: post.Vote.PostOrCommentID,
-				IsUpVote:        post.Vote.IsUpVote.Bool,
-				VoteType:        models.VoteType(post.Vote.VoteType),
-				IsDeleted:       post.Vote.IsDeleted.Bool,
-			}
-		} else {
-			vote = nil
+		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		if err != nil {
+			return err
 		}
 		list = append(list, models.Post{
 			Id:            post.Post.ID,
@@ -158,9 +140,9 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 			DownVotes:     post.DownVotes,
 			PosterPicture: getPictureMeta(post.Picture),
 			SpacePicture:  getPictureMeta(post.Picture_2),
-			PostPicture:   getPictureMeta(post.Picture_3),
+			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          vote,
+			Vote:          getVote(post.Vote),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})

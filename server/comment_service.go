@@ -132,19 +132,6 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		}
 		var list []models.Comment
 		for _, comment := range res {
-			var vote *models.Vote
-			if comment.Vote.ID != 0 {
-				vote = &models.Vote{
-					VoteId:          comment.Vote.ID,
-					UserId:          comment.Vote.UserID,
-					PostOrCommentId: comment.Vote.PostOrCommentID,
-					IsUpVote:        comment.Vote.IsUpVote.Bool,
-					VoteType:        models.VoteType(comment.Vote.VoteType),
-					IsDeleted:       comment.Vote.IsDeleted.Bool,
-				}
-			} else {
-				vote = nil
-			}
 			list = append(list, models.Comment{
 				Id:          comment.Comment.ID,
 				PosterId:    comment.Comment.PosterID,
@@ -156,7 +143,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 				UpVotes:     comment.UpVotes,
 				DownVotes:   comment.DownVotes,
 				Created:     comment.Comment.Created.Time,
-				Vote:        vote,
+				Vote:        getVote(comment.Vote),
 			})
 		}
 		return c.JSON(list)
@@ -174,20 +161,6 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	var list []models.Comment
 	for _, comment := range res {
-		var vote *models.Vote
-		if comment.Vote.ID != 0 {
-			vote = &models.Vote{
-				VoteId:          comment.Vote.ID,
-				UserId:          comment.Vote.UserID,
-				PostOrCommentId: comment.Vote.PostOrCommentID,
-				IsUpVote:        comment.Vote.IsUpVote.Bool,
-				VoteType:        models.VoteType(comment.Vote.VoteType),
-				IsDeleted:       comment.Vote.IsDeleted.Bool,
-			}
-		} else {
-			vote = nil
-		}
-
 		list = append(list, models.Comment{
 			Id:          comment.Comment.ID,
 			PosterId:    comment.Comment.PosterID,
@@ -199,7 +172,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 			UpVotes:     comment.UpVotes,
 			DownVotes:   comment.DownVotes,
 			Created:     comment.Comment.Created.Time,
-			Vote:        vote,
+			Vote:        getVote(comment.Vote),
 		})
 	}
 	return c.JSON(list)

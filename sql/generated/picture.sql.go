@@ -8,30 +8,24 @@ package sql
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
 
 const createPicture = `-- name: CreatePicture :one
-INSERT INTO pictures (post_id, comment_id, url, width, height)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO pictures (url, width, height)
+VALUES ($1, $2, $3)
 RETURNING id, post_id, comment_id, url, width, height
 `
 
 type CreatePictureParams struct {
-	PostID    sql.NullInt64
-	CommentID sql.NullInt64
-	Url       string
-	Width     int64
-	Height    int64
+	Url    string
+	Width  int64
+	Height int64
 }
 
 func (q *Queries) CreatePicture(ctx context.Context, arg CreatePictureParams) (Picture, error) {
-	row := q.db.QueryRowContext(ctx, createPicture,
-		arg.PostID,
-		arg.CommentID,
-		arg.Url,
-		arg.Width,
-		arg.Height,
-	)
+	row := q.db.QueryRowContext(ctx, createPicture, arg.Url, arg.Width, arg.Height)
 	var i Picture
 	err := row.Scan(
 		&i.ID,
@@ -42,4 +36,78 @@ func (q *Queries) CreatePicture(ctx context.Context, arg CreatePictureParams) (P
 		&i.Height,
 	)
 	return i, err
+}
+
+const getPicturesForPost = `-- name: GetPicturesForPost :many
+SELECT p.id, p.post_id, p.comment_id, p.url, p.width, p.height
+FROM pictures p
+         join pictureRelations pr on p.id = pr.picture_id
+where pr.post_id = $1
+`
+
+func (q *Queries) GetPicturesForPost(ctx context.Context, postID sql.NullInt64) ([]Picture, error) {
+	rows, err := q.db.QueryContext(ctx, getPicturesForPost, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Picture
+	for rows.Next() {
+		var i Picture
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.CommentID,
+			&i.Url,
+			&i.Width,
+			&i.Height,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPicturesForPosts = `-- name: GetPicturesForPosts :many
+SELECT p.id, p.post_id, p.comment_id, p.url, p.width, p.height
+FROM pictures p
+         join pictureRelations pr on p.id = pr.picture_id
+where pr.post_id IN ($1::bigint[])
+`
+
+func (q *Queries) GetPicturesForPosts(ctx context.Context, dollar_1 []int64) ([]Picture, error) {
+	rows, err := q.db.QueryContext(ctx, getPicturesForPosts, pq.Array(dollar_1))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Picture
+	for rows.Next() {
+		var i Picture
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.CommentID,
+			&i.Url,
+			&i.Width,
+			&i.Height,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

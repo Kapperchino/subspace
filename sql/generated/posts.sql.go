@@ -53,7 +53,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -75,7 +75,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id = $1
 LIMIT 1
 `
@@ -91,7 +91,6 @@ type GetPostRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -130,12 +129,6 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, e
 		&i.Vote.PostOrCommentID,
 		&i.Vote.VoteType,
 		&i.Vote.IsDeleted,
-		&i.Picture_3.ID,
-		&i.Picture_3.PostID,
-		&i.Picture_3.CommentID,
-		&i.Picture_3.Url,
-		&i.Picture_3.Width,
-		&i.Picture_3.Height,
 		&i.ParentID,
 		&i.SpaceName,
 		&i.UpVotes,
@@ -173,7 +166,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -195,7 +188,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC
@@ -212,7 +205,6 @@ type GetPostsForHomeLatestRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -257,12 +249,6 @@ func (q *Queries) GetPostsForHomeLatest(ctx context.Context, arg GetPostsForHome
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -287,7 +273,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -309,7 +295,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
@@ -327,7 +313,6 @@ type GetPostsForHomePopularRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -372,12 +357,6 @@ func (q *Queries) GetPostsForHomePopular(ctx context.Context, arg GetPostsForHom
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -402,7 +381,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -424,7 +403,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -443,7 +422,6 @@ type GetPostsForSpaceLatestRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -488,12 +466,6 @@ func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpa
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -518,7 +490,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -540,7 +512,6 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -561,7 +532,6 @@ type GetPostsForSpaceLatestByNameRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -611,12 +581,6 @@ func (q *Queries) GetPostsForSpaceLatestByName(ctx context.Context, arg GetPosts
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -641,7 +605,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -663,7 +627,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -682,7 +646,6 @@ type GetPostsForSpacePopularRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -727,12 +690,6 @@ func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSp
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -757,7 +714,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -779,7 +736,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -800,7 +757,6 @@ type GetPostsForSpacePopularByNameRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -850,12 +806,6 @@ func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPost
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -880,7 +830,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -902,7 +852,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.poster_id = $1
   AND p.id != 1
 `
@@ -913,7 +863,6 @@ type GetPostsForUserRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -958,12 +907,6 @@ func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPosts
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -988,7 +931,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -1011,7 +954,7 @@ FROM posts p
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -1029,7 +972,6 @@ type GetPostsForUserSubscriptionLatestRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -1074,12 +1016,6 @@ func (q *Queries) GetPostsForUserSubscriptionLatest(ctx context.Context, arg Get
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -1104,7 +1040,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -1127,7 +1063,7 @@ FROM posts p
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -1145,7 +1081,6 @@ type GetPostsForUserSubscriptionPopularRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -1190,12 +1125,6 @@ func (q *Queries) GetPostsForUserSubscriptionPopular(ctx context.Context, arg Ge
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -1220,7 +1149,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -1242,7 +1171,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
@@ -1261,7 +1190,6 @@ type SearchPostRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -1306,12 +1234,6 @@ func (q *Queries) SearchPost(ctx context.Context, arg SearchPostParams) ([]Searc
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,

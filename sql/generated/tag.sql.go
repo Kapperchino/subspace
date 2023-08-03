@@ -48,7 +48,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -72,7 +72,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 
 WHERE p.id != 1
   AND t1.name = $2
@@ -92,7 +92,6 @@ type GetPostsWithTagsLatestRow struct {
 	Picture     Picture
 	Picture_2   Picture
 	Vote        Vote
-	Picture_3   Picture
 	ParentID    int64
 	SpaceName   string
 	UpVotes     int64
@@ -137,12 +136,6 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 			&i.Vote.PostOrCommentID,
 			&i.Vote.VoteType,
 			&i.Vote.IsDeleted,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.ParentID,
 			&i.SpaceName,
 			&i.UpVotes,
@@ -166,7 +159,7 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        u.display_name,
        user_pic.id, user_pic.post_id, user_pic.comment_id, user_pic.url, user_pic.width, user_pic.height,
        space_small_pic.id, space_small_pic.post_id, space_small_pic.comment_id, space_small_pic.url, space_small_pic.width, space_small_pic.height,
-       post_pic.id, post_pic.post_id, post_pic.comment_id, post_pic.url, post_pic.width, post_pic.height,
+
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        s.parent_id,
        s.name                       as space_name,
@@ -191,7 +184,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 
 WHERE p.id != 1
   AND t1.name = $2
@@ -210,7 +203,6 @@ type GetPostsWithTagsPopularRow struct {
 	DisplayName string
 	Picture     Picture
 	Picture_2   Picture
-	Picture_3   Picture
 	Vote        Vote
 	ParentID    int64
 	SpaceName   string
@@ -250,12 +242,6 @@ func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithT
 			&i.Picture_2.Url,
 			&i.Picture_2.Width,
 			&i.Picture_2.Height,
-			&i.Picture_3.ID,
-			&i.Picture_3.PostID,
-			&i.Picture_3.CommentID,
-			&i.Picture_3.Url,
-			&i.Picture_3.Width,
-			&i.Picture_3.Height,
 			&i.Vote.ID,
 			&i.Vote.IsUpVote,
 			&i.Vote.UserID,

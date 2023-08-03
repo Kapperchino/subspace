@@ -19,7 +19,7 @@ SELECT sqlc.embed(p),
        u.display_name,
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
-       sqlc.embed(post_pic),
+
        sqlc.embed(v),
        s.parent_id,
        s.name                       as space_name,
@@ -44,7 +44,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 
 WHERE p.id != 1
   AND t1.name = $2
@@ -57,7 +57,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -81,7 +81,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 
 WHERE p.id != 1
   AND t1.name = $2

@@ -59,32 +59,54 @@ func (q *Queries) DeleteSpace(ctx context.Context, id int64) error {
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id
-FROM spaces
-WHERE id = $1
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+FROM spaces s
+         left join pictures small_picture on s.small_picture_id
+         left join pictures background_picture on s.background_picture_id
+WHERE s.id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetSpace(ctx context.Context, id int64) (Space, error) {
+type GetSpaceRow struct {
+	Space     Space
+	Picture   Picture
+	Picture_2 Picture
+}
+
+func (q *Queries) GetSpace(ctx context.Context, id int64) (GetSpaceRow, error) {
 	row := q.db.QueryRowContext(ctx, getSpace, id)
-	var i Space
+	var i GetSpaceRow
 	err := row.Scan(
-		&i.ID,
-		&i.ParentID,
-		&i.Name,
-		&i.Description,
-		&i.IsDeleted,
-		&i.Created,
-		&i.Ts,
-		&i.SmallPictureID,
-		&i.BackgroundPictureID,
+		&i.Space.ID,
+		&i.Space.ParentID,
+		&i.Space.Name,
+		&i.Space.Description,
+		&i.Space.IsDeleted,
+		&i.Space.Created,
+		&i.Space.Ts,
+		&i.Space.SmallPictureID,
+		&i.Space.BackgroundPictureID,
+		&i.Picture.ID,
+		&i.Picture.PostID,
+		&i.Picture.CommentID,
+		&i.Picture.Url,
+		&i.Picture.Width,
+		&i.Picture.Height,
+		&i.Picture_2.ID,
+		&i.Picture_2.PostID,
+		&i.Picture_2.CommentID,
+		&i.Picture_2.Url,
+		&i.Picture_2.Width,
+		&i.Picture_2.Height,
 	)
 	return i, err
 }
 
 const getSpaceByName = `-- name: GetSpaceByName :one
-SELECT id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id
-FROM spaces
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+FROM spaces s
+         left join pictures small_picture on s.small_picture_id
+         left join pictures background_picture on s.background_picture_id
 WHERE name = $1
   AND parent_id = $2
 LIMIT 1
@@ -95,48 +117,86 @@ type GetSpaceByNameParams struct {
 	ParentID int64
 }
 
-func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) (Space, error) {
+type GetSpaceByNameRow struct {
+	Space     Space
+	Picture   Picture
+	Picture_2 Picture
+}
+
+func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) (GetSpaceByNameRow, error) {
 	row := q.db.QueryRowContext(ctx, getSpaceByName, arg.Name, arg.ParentID)
-	var i Space
+	var i GetSpaceByNameRow
 	err := row.Scan(
-		&i.ID,
-		&i.ParentID,
-		&i.Name,
-		&i.Description,
-		&i.IsDeleted,
-		&i.Created,
-		&i.Ts,
-		&i.SmallPictureID,
-		&i.BackgroundPictureID,
+		&i.Space.ID,
+		&i.Space.ParentID,
+		&i.Space.Name,
+		&i.Space.Description,
+		&i.Space.IsDeleted,
+		&i.Space.Created,
+		&i.Space.Ts,
+		&i.Space.SmallPictureID,
+		&i.Space.BackgroundPictureID,
+		&i.Picture.ID,
+		&i.Picture.PostID,
+		&i.Picture.CommentID,
+		&i.Picture.Url,
+		&i.Picture.Width,
+		&i.Picture.Height,
+		&i.Picture_2.ID,
+		&i.Picture_2.PostID,
+		&i.Picture_2.CommentID,
+		&i.Picture_2.Url,
+		&i.Picture_2.Width,
+		&i.Picture_2.Height,
 	)
 	return i, err
 }
 
 const getSpacesOfParent = `-- name: GetSpacesOfParent :many
-SELECT id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id
-FROM spaces
-WHERE parent_id = $1
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+FROM spaces s
+         left join pictures small_picture on s.small_picture_id
+         left join pictures background_picture on s.background_picture_id
+WHERE s.parent_id = $1
 `
 
-func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Space, error) {
+type GetSpacesOfParentRow struct {
+	Space     Space
+	Picture   Picture
+	Picture_2 Picture
+}
+
+func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetSpacesOfParentRow, error) {
 	rows, err := q.db.QueryContext(ctx, getSpacesOfParent, parentID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Space
+	var items []GetSpacesOfParentRow
 	for rows.Next() {
-		var i Space
+		var i GetSpacesOfParentRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.ParentID,
-			&i.Name,
-			&i.Description,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Ts,
-			&i.SmallPictureID,
-			&i.BackgroundPictureID,
+			&i.Space.ID,
+			&i.Space.ParentID,
+			&i.Space.Name,
+			&i.Space.Description,
+			&i.Space.IsDeleted,
+			&i.Space.Created,
+			&i.Space.Ts,
+			&i.Space.SmallPictureID,
+			&i.Space.BackgroundPictureID,
+			&i.Picture.ID,
+			&i.Picture.PostID,
+			&i.Picture.CommentID,
+			&i.Picture.Url,
+			&i.Picture.Width,
+			&i.Picture.Height,
+			&i.Picture_2.ID,
+			&i.Picture_2.PostID,
+			&i.Picture_2.CommentID,
+			&i.Picture_2.Url,
+			&i.Picture_2.Width,
+			&i.Picture_2.Height,
 		); err != nil {
 			return nil, err
 		}
@@ -152,32 +212,52 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]Spac
 }
 
 const getUserSpaces = `-- name: GetUserSpaces :many
-SELECT sp.id, sp.parent_id, sp.name, sp.description, sp.is_deleted, sp.created, sp.ts, sp.small_picture_id, sp.background_picture_id
+SELECT sp.id, sp.parent_id, sp.name, sp.description, sp.is_deleted, sp.created, sp.ts, sp.small_picture_id, sp.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
 FROM subscriptions su
          JOIN spaces sp ON su.space_id = sp.id
+         left join pictures small_picture on s.small_picture_id
+         left join pictures background_picture on s.background_picture_id
 WHERE su.user_id = $1
   AND su.is_deleted = false
 `
 
-func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]Space, error) {
+type GetUserSpacesRow struct {
+	Space     Space
+	Picture   Picture
+	Picture_2 Picture
+}
+
+func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpacesRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUserSpaces, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Space
+	var items []GetUserSpacesRow
 	for rows.Next() {
-		var i Space
+		var i GetUserSpacesRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.ParentID,
-			&i.Name,
-			&i.Description,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Ts,
-			&i.SmallPictureID,
-			&i.BackgroundPictureID,
+			&i.Space.ID,
+			&i.Space.ParentID,
+			&i.Space.Name,
+			&i.Space.Description,
+			&i.Space.IsDeleted,
+			&i.Space.Created,
+			&i.Space.Ts,
+			&i.Space.SmallPictureID,
+			&i.Space.BackgroundPictureID,
+			&i.Picture.ID,
+			&i.Picture.PostID,
+			&i.Picture.CommentID,
+			&i.Picture.Url,
+			&i.Picture.Width,
+			&i.Picture.Height,
+			&i.Picture_2.ID,
+			&i.Picture_2.PostID,
+			&i.Picture_2.CommentID,
+			&i.Picture_2.Url,
+			&i.Picture_2.Width,
+			&i.Picture_2.Height,
 		); err != nil {
 			return nil, err
 		}
@@ -193,16 +273,18 @@ func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]Space, err
 }
 
 const searchSpace = `-- name: SearchSpace :many
-SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, p.id, p.post_id, p.comment_id, p.url, p.width, p.height
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
 FROM spaces s
-         LEFT JOIN pictures p on s.small_picture_id = p.id
+         left join pictures small_picture on s.small_picture_id
+         left join pictures background_picture on s.background_picture_id
 WHERE id != 1
 ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC
 `
 
 type SearchSpaceRow struct {
-	Space   Space
-	Picture Picture
+	Space     Space
+	Picture   Picture
+	Picture_2 Picture
 }
 
 func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]SearchSpaceRow, error) {
@@ -230,6 +312,12 @@ func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Sea
 			&i.Picture.Url,
 			&i.Picture.Width,
 			&i.Picture.Height,
+			&i.Picture_2.ID,
+			&i.Picture_2.PostID,
+			&i.Picture_2.CommentID,
+			&i.Picture_2.Url,
+			&i.Picture_2.Width,
+			&i.Picture_2.Height,
 		); err != nil {
 			return nil, err
 		}

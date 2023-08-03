@@ -9,7 +9,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -31,7 +31,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
@@ -43,7 +43,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -65,7 +65,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id = $1
 LIMIT 1;
 
@@ -75,7 +75,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -97,7 +97,6 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -110,7 +109,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -132,7 +131,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -144,7 +143,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -166,7 +165,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC;
@@ -177,7 +176,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -199,7 +198,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE s.name = $1
   AND s.parent_id = $2
   AND p.id != 1
@@ -212,7 +211,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -234,7 +233,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
@@ -246,7 +245,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -268,7 +267,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
@@ -280,7 +279,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -302,7 +301,7 @@ FROM posts p
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.poster_id = $1
   AND p.id != 1;
 
@@ -312,7 +311,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -335,7 +334,7 @@ FROM posts p
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -347,7 +346,7 @@ SELECT sqlc.embed(p),
        sqlc.embed(user_pic),
        sqlc.embed(space_small_pic),
        sqlc.embed(v),
-       sqlc.embed(post_pic),
+
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -370,7 +369,7 @@ FROM posts p
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
          left join pictures user_pic on user_pic.post_id = p.id
          left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
-         left join pictures post_pic on p.id = post_pic.post_id
+
 WHERE p.id != 1
   AND s.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)

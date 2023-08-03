@@ -183,12 +183,17 @@ type GetCommentsForCommentParams struct {
 }
 
 type GetCommentsForCommentRow struct {
-	Comment     Comment
-	Picture     Picture
-	Vote        Vote
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+	Comment         Comment
+	Picture         Picture
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+	DisplayName     string
+	UpVotes         int64
+	DownVotes       int64
 }
 
 func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForCommentParams) ([]GetCommentsForCommentRow, error) {
@@ -215,12 +220,12 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 			&i.Picture.Url,
 			&i.Picture.Width,
 			&i.Picture.Height,
-			&i.Vote.ID,
-			&i.Vote.IsUpVote,
-			&i.Vote.UserID,
-			&i.Vote.PostOrCommentID,
-			&i.Vote.VoteType,
-			&i.Vote.IsDeleted,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
@@ -296,12 +301,17 @@ type GetCommentsForPostParams struct {
 }
 
 type GetCommentsForPostRow struct {
-	Comment     Comment
-	Picture     Picture
-	Vote        Vote
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+	Comment         Comment
+	Picture         Picture
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+	DisplayName     string
+	UpVotes         int64
+	DownVotes       int64
 }
 
 func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPostParams) ([]GetCommentsForPostRow, error) {
@@ -328,12 +338,12 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 			&i.Picture.Url,
 			&i.Picture.Width,
 			&i.Picture.Height,
-			&i.Vote.ID,
-			&i.Vote.IsUpVote,
-			&i.Vote.UserID,
-			&i.Vote.PostOrCommentID,
-			&i.Vote.VoteType,
-			&i.Vote.IsDeleted,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,

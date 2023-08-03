@@ -34,7 +34,7 @@ WITH RECURSIVE allCommentsForPost AS (
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
        sqlc.embed(p),
-       sqlc.embed(v),
+       v.*,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -86,7 +86,7 @@ WITH RECURSIVE allCommentsForComment AS (
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
        sqlc.embed(p),
-       sqlc.embed(v),
+       v.*,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v

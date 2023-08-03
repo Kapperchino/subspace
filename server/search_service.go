@@ -51,9 +51,9 @@ func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 			Name:        space.Space.Name,
 			Description: space.Space.Description.String,
 			SmallPicture: &models.PictureMeta{
-				Url:    space.Picture.Url,
-				Width:  space.Picture.Width,
-				Height: space.Picture.Height,
+				Url:    space.SpaceSmallPicUrl.String,
+				Width:  space.SpaceSmallPicWidth.Int64,
+				Height: space.SpaceSmallPicHeight.Int64,
 			},
 		})
 	}
@@ -99,11 +99,12 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -138,11 +139,11 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})

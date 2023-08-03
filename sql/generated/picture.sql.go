@@ -38,10 +38,34 @@ func (q *Queries) CreatePicture(ctx context.Context, arg CreatePictureParams) (P
 	return i, err
 }
 
+const createPictureRelation = `-- name: CreatePictureRelation :one
+INSERT INTO picture_releations (picture_id, post_id, comment_id)
+VALUES ($1, $2, $3)
+RETURNING id, picture_id, post_id, comment_id
+`
+
+type CreatePictureRelationParams struct {
+	PictureID sql.NullInt64
+	PostID    sql.NullInt64
+	CommentID sql.NullInt64
+}
+
+func (q *Queries) CreatePictureRelation(ctx context.Context, arg CreatePictureRelationParams) (PictureReleation, error) {
+	row := q.db.QueryRowContext(ctx, createPictureRelation, arg.PictureID, arg.PostID, arg.CommentID)
+	var i PictureReleation
+	err := row.Scan(
+		&i.ID,
+		&i.PictureID,
+		&i.PostID,
+		&i.CommentID,
+	)
+	return i, err
+}
+
 const getPicturesForPost = `-- name: GetPicturesForPost :many
 SELECT p.id, p.post_id, p.comment_id, p.url, p.width, p.height
 FROM pictures p
-         join pictureRelations pr on p.id = pr.picture_id
+         join picture_releations pr on p.id = pr.picture_id
 where pr.post_id = $1
 `
 
@@ -78,7 +102,7 @@ func (q *Queries) GetPicturesForPost(ctx context.Context, postID sql.NullInt64) 
 const getPicturesForPosts = `-- name: GetPicturesForPosts :many
 SELECT p.id, p.post_id, p.comment_id, p.url, p.width, p.height
 FROM pictures p
-         join pictureRelations pr on p.id = pr.picture_id
+         join picture_releations pr on p.id = pr.picture_id
 where pr.post_id IN ($1::bigint[])
 `
 

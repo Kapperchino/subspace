@@ -65,7 +65,7 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 					break
 				case '#':
 					tag, err := queries.GetTag(c.Context(), trimmed[1:])
-					if err != nil && err == sql.ErrNoRows || tag.ID == 0 {
+					if err != nil && errors.Is(err, sql.ErrNoRows) || tag.ID == 0 {
 						tag, err = queries.CreateTag(c.Context(), trimmed[1:])
 						if err != nil {
 							log.Error().Err(err).Msg("Error while creating using in db")
@@ -107,6 +107,25 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+
+	if req.ContentType == models.CONTENT_PICTURE && req.FileIds == nil {
+		for _, id := range req.FileIds {
+			_, err := queries.CreatePictureRelation(c.Context(), gen.CreatePictureRelationParams{
+				PictureID: sql.NullInt64{
+					Int64: id,
+					Valid: true,
+				},
+				PostID: sql.NullInt64{
+					Int64: post.ID,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("Error while creating picture relations in db")
+				return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+			}
+		}
 	}
 
 	for _, tag := range tags {
@@ -158,7 +177,7 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		UserID: int64(userId),
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -178,11 +197,11 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		ContentType:   models.ContentType(res.Post.ContentType.ContentType),
 		UpVotes:       res.UpVotes,
 		DownVotes:     res.DownVotes,
-		PosterPicture: getPictureMeta(res.Picture),
-		SpacePicture:  getPictureMeta(res.Picture_2),
+		PosterPicture: getPictureMeta(res.UserPicUrl, res.UserPicWidth, res.UserPicHeight),
+		SpacePicture:  getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight),
 		PostPictures:  pictures,
 		Created:       res.Post.Created.Time,
-		Vote:          getVote(res.Vote),
+		Vote:          getVote(res.IsUpVote, res.VoteType),
 		SpaceParentId: res.ParentID,
 		SpaceName:     res.SpaceName,
 	})
@@ -296,7 +315,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 			UserID: userId,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return nil, c.SendStatus(fiber.StatusOK)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -318,11 +337,11 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -338,7 +357,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		Days:   days,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -360,11 +379,12 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -381,7 +401,7 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 			UserID:   userId,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return nil, c.SendStatus(fiber.StatusOK)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -403,11 +423,12 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -421,7 +442,7 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		Days:     days,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -444,11 +465,12 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -464,7 +486,7 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	res, err := queries.GetPostsForUser(c.Context(), int64(userId))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -487,11 +509,12 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -506,7 +529,7 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 			UserID: userId,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return nil, c.SendStatus(fiber.StatusOK)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -528,11 +551,12 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -544,7 +568,7 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 		Days:   days,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -567,11 +591,12 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -586,7 +611,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 			UserID: userId,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return nil, c.SendStatus(fiber.StatusOK)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -608,11 +633,12 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -624,7 +650,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 		Days:   days,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -647,11 +673,12 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
+
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -667,7 +694,7 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 			Name:   tag,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return nil, c.SendStatus(fiber.StatusOK)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -689,11 +716,11 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 				Body:          post.Post.Body.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.Picture),
-				SpacePicture:  getPictureMeta(post.Picture_2),
+				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
 				PostPictures:  pictures,
 				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.Vote),
+				Vote:          getVote(post.IsUpVote, post.VoteType),
 				SpaceParentId: post.ParentID,
 				SpaceName:     post.SpaceName,
 			})
@@ -706,7 +733,7 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 		Name:   tag,
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -729,11 +756,11 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 			Body:          post.Post.Body.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.Picture),
-			SpacePicture:  getPictureMeta(post.Picture_2),
+			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
+			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight),
 			PostPictures:  pictures,
 			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.Vote),
+			Vote:          getVote(post.IsUpVote, post.VoteType),
 			SpaceParentId: post.ParentID,
 			SpaceName:     post.SpaceName,
 		})
@@ -741,7 +768,28 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 	return list, nil
 }
 
-func getPictureMeta(picture gen.Picture) *models.PictureMeta {
+func getPictureMeta(url sql.NullString, width sql.NullInt64, height sql.NullInt64) *models.PictureMeta {
+	if !url.Valid {
+		return nil
+	}
+	return &models.PictureMeta{
+		Url:    url.String,
+		Width:  width.Int64,
+		Height: height.Int64,
+	}
+}
+
+func getVote(isUpVote sql.NullBool, voteType gen.NullVoteType) *models.Vote {
+	if !isUpVote.Valid {
+		return nil
+	}
+	return &models.Vote{
+		IsUpVote: isUpVote.Bool,
+		VoteType: models.VoteType(voteType.VoteType),
+	}
+}
+
+func getPictureMetaFromModel(picture gen.Picture) *models.PictureMeta {
 	if picture.ID == 0 {
 		return nil
 	}
@@ -749,20 +797,6 @@ func getPictureMeta(picture gen.Picture) *models.PictureMeta {
 		Url:    picture.Url,
 		Width:  picture.Width,
 		Height: picture.Height,
-	}
-}
-
-func getVote(vote gen.Vote) *models.Vote {
-	if vote.ID == 0 {
-		return nil
-	}
-	return &models.Vote{
-		VoteId:          vote.ID,
-		UserId:          vote.UserID,
-		PostOrCommentId: vote.PostOrCommentID,
-		IsUpVote:        vote.IsUpVote.Bool,
-		VoteType:        models.VoteType(vote.VoteType),
-		IsDeleted:       vote.IsDeleted.Bool,
 	}
 }
 
@@ -781,7 +815,7 @@ func getPicturesForPost(postId int64, queries *gen.Queries, c *fiber.Ctx) ([]*mo
 	}
 	var slice []*models.PictureMeta
 	for _, p := range res {
-		slice = append(slice, getPictureMeta(p))
+		slice = append(slice, getPictureMetaFromModel(p))
 	}
 	return slice, nil
 }

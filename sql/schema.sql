@@ -158,6 +158,37 @@ ALTER SEQUENCE public.mentions_id_seq OWNED BY public.mentions.id;
 
 
 --
+-- Name: picture_releations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.picture_releations (
+    id bigint NOT NULL,
+    picture_id bigint,
+    post_id bigint,
+    comment_id bigint
+);
+
+
+--
+-- Name: picture_releations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.picture_releations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: picture_releations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.picture_releations_id_seq OWNED BY public.picture_releations.id;
+
+
+--
 -- Name: pictures; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -470,6 +501,13 @@ ALTER TABLE ONLY public.mentions ALTER COLUMN id SET DEFAULT nextval('public.men
 
 
 --
+-- Name: picture_releations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.picture_releations ALTER COLUMN id SET DEFAULT nextval('public.picture_releations_id_seq'::regclass);
+
+
+--
 -- Name: pictures id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -554,6 +592,14 @@ ALTER TABLE ONLY public.devices
 
 ALTER TABLE ONLY public.mentions
     ADD CONSTRAINT mentions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: picture_releations picture_releations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.picture_releations
+    ADD CONSTRAINT picture_releations_pkey PRIMARY KEY (id);
 
 
 --
@@ -737,6 +783,14 @@ ALTER TABLE ONLY public.mentions
 
 ALTER TABLE ONLY public.mentions
     ADD CONSTRAINT mentions_user_mentioned_id_fkey FOREIGN KEY (user_mentioned_id) REFERENCES public.users(id);
+
+
+--
+-- Name: picture_releations picture_releations_picture_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.picture_releations
+    ADD CONSTRAINT picture_releations_picture_id_fkey FOREIGN KEY (picture_id) REFERENCES public.pictures(id);
 
 
 --

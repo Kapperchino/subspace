@@ -17,10 +17,14 @@ RETURNING *;
 -- name: GetPostsWithTagsPopular :many
 SELECT sqlc.embed(p),
        u.display_name,
-       sqlc.embed(user_pic),
-       sqlc.embed(space_small_pic),
+       user_pic.url                 as user_pic_url,
+       user_pic.width               as user_pic_width,
+       user_pic.height              as user_pic_height,
+       space_small_pic.url          as space_small_pic_url,
+       space_small_pic.width        as space_small_pic_width,
+       space_small_pic.height       as space_small_pic_height,
 
-       sqlc.embed(v),
+       v.*,
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -43,7 +47,7 @@ FROM posts p
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
-         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 
 WHERE p.id != 1
@@ -54,10 +58,13 @@ ORDER BY up_votes DESC;
 -- name: GetPostsWithTagsLatest :many
 SELECT sqlc.embed(p),
        u.display_name,
-       sqlc.embed(user_pic),
-       sqlc.embed(space_small_pic),
-       sqlc.embed(v),
-
+       user_pic.url                 as user_pic_url,
+       user_pic.width               as user_pic_width,
+       user_pic.height              as user_pic_height,
+       space_small_pic.url          as space_small_pic_url,
+       space_small_pic.width        as space_small_pic_width,
+       space_small_pic.height       as space_small_pic_height,
+       v.*,
        s.parent_id,
        s.name                       as space_name,
        (SELECT COUNT(id)
@@ -80,7 +87,7 @@ FROM posts p
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          left join pictures user_pic on user_pic.post_id = p.id
-         left join pictures space_small_pic on space.small_picture_id = space_small_pic.id
+         left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 
 WHERE p.id != 1

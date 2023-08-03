@@ -9,7 +9,7 @@ CREATE TABLE pictures
     height     BIGINT NOT NULL
 );
 
-CREATE TABLE pictureRelations
+CREATE TABLE picture_releations
 (
     id         BIGSERIAL PRIMARY KEY,
     picture_id BIGINT REFERENCES pictures (id),

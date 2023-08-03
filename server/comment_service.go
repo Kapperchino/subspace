@@ -143,7 +143,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 				UpVotes:     comment.UpVotes,
 				DownVotes:   comment.DownVotes,
 				Created:     comment.Comment.Created.Time,
-				Vote:        getVote(comment.Vote),
+				Vote:        getVote(comment.IsUpVote, comment.VoteType),
 			})
 		}
 		return c.JSON(list)
@@ -172,7 +172,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 			UpVotes:     comment.UpVotes,
 			DownVotes:   comment.DownVotes,
 			Created:     comment.Comment.Created.Time,
-			Vote:        getVote(comment.Vote),
+			Vote:        getVote(comment.IsUpVote, comment.VoteType),
 		})
 	}
 	return c.JSON(list)

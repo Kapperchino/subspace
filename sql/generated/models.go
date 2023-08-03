@@ -130,7 +130,7 @@ type Picture struct {
 	Height    int64
 }
 
-type Picturerelation struct {
+type PictureReleation struct {
 	ID        int64
 	PictureID sql.NullInt64
 	PostID    sql.NullInt64

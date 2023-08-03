@@ -8,7 +8,7 @@ type PostCreation struct {
 	Topic       string      `validate:"max=6000" json:"topic"`
 	Body        string      `validate:"required_without_all=FileIds,max=60000" json:"body"`
 	ContentType ContentType `json:"content_type"`
-	FileIds     *[]int64    `json:"file_ids"`
+	FileIds     []int64     `json:"file_ids"`
 }
 
 type Post struct {

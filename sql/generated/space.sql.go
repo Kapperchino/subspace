@@ -59,18 +59,28 @@ func (q *Queries) DeleteSpace(ctx context.Context, id int64) error {
 }
 
 const getSpace = `-- name: GetSpace :one
-SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id,
+       small_picture.url         as space_small_pic_url,
+       small_picture.width       as space_small_pic_width,
+       small_picture.height      as space_small_pic_height,
+       background_picture.url    as background_picture_url,
+       background_picture.width  as background_picture_width,
+       background_picture.height as background_picture_height
 FROM spaces s
-         left join pictures small_picture on s.small_picture_id
-         left join pictures background_picture on s.background_picture_id
+         left join pictures small_picture on s.small_picture_id = small_picture.id
+         left join pictures background_picture on s.background_picture_id = background_picture.id
 WHERE s.id = $1
 LIMIT 1
 `
 
 type GetSpaceRow struct {
-	Space     Space
-	Picture   Picture
-	Picture_2 Picture
+	Space                   Space
+	SpaceSmallPicUrl        sql.NullString
+	SpaceSmallPicWidth      sql.NullInt64
+	SpaceSmallPicHeight     sql.NullInt64
+	BackgroundPictureUrl    sql.NullString
+	BackgroundPictureWidth  sql.NullInt64
+	BackgroundPictureHeight sql.NullInt64
 }
 
 func (q *Queries) GetSpace(ctx context.Context, id int64) (GetSpaceRow, error) {
@@ -86,27 +96,27 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (GetSpaceRow, error) {
 		&i.Space.Ts,
 		&i.Space.SmallPictureID,
 		&i.Space.BackgroundPictureID,
-		&i.Picture.ID,
-		&i.Picture.PostID,
-		&i.Picture.CommentID,
-		&i.Picture.Url,
-		&i.Picture.Width,
-		&i.Picture.Height,
-		&i.Picture_2.ID,
-		&i.Picture_2.PostID,
-		&i.Picture_2.CommentID,
-		&i.Picture_2.Url,
-		&i.Picture_2.Width,
-		&i.Picture_2.Height,
+		&i.SpaceSmallPicUrl,
+		&i.SpaceSmallPicWidth,
+		&i.SpaceSmallPicHeight,
+		&i.BackgroundPictureUrl,
+		&i.BackgroundPictureWidth,
+		&i.BackgroundPictureHeight,
 	)
 	return i, err
 }
 
 const getSpaceByName = `-- name: GetSpaceByName :one
-SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id,
+       small_picture.url         as space_small_pic_url,
+       small_picture.width       as space_small_pic_width,
+       small_picture.height      as space_small_pic_height,
+       background_picture.url    as background_picture_url,
+       background_picture.width  as background_picture_width,
+       background_picture.height as background_picture_height
 FROM spaces s
-         left join pictures small_picture on s.small_picture_id
-         left join pictures background_picture on s.background_picture_id
+         left join pictures small_picture on s.small_picture_id = small_picture.id
+         left join pictures background_picture on s.background_picture_id = background_picture.id
 WHERE name = $1
   AND parent_id = $2
 LIMIT 1
@@ -118,9 +128,13 @@ type GetSpaceByNameParams struct {
 }
 
 type GetSpaceByNameRow struct {
-	Space     Space
-	Picture   Picture
-	Picture_2 Picture
+	Space                   Space
+	SpaceSmallPicUrl        sql.NullString
+	SpaceSmallPicWidth      sql.NullInt64
+	SpaceSmallPicHeight     sql.NullInt64
+	BackgroundPictureUrl    sql.NullString
+	BackgroundPictureWidth  sql.NullInt64
+	BackgroundPictureHeight sql.NullInt64
 }
 
 func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) (GetSpaceByNameRow, error) {
@@ -136,34 +150,38 @@ func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) 
 		&i.Space.Ts,
 		&i.Space.SmallPictureID,
 		&i.Space.BackgroundPictureID,
-		&i.Picture.ID,
-		&i.Picture.PostID,
-		&i.Picture.CommentID,
-		&i.Picture.Url,
-		&i.Picture.Width,
-		&i.Picture.Height,
-		&i.Picture_2.ID,
-		&i.Picture_2.PostID,
-		&i.Picture_2.CommentID,
-		&i.Picture_2.Url,
-		&i.Picture_2.Width,
-		&i.Picture_2.Height,
+		&i.SpaceSmallPicUrl,
+		&i.SpaceSmallPicWidth,
+		&i.SpaceSmallPicHeight,
+		&i.BackgroundPictureUrl,
+		&i.BackgroundPictureWidth,
+		&i.BackgroundPictureHeight,
 	)
 	return i, err
 }
 
 const getSpacesOfParent = `-- name: GetSpacesOfParent :many
-SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id,
+       small_picture.url         as space_small_pic_url,
+       small_picture.width       as space_small_pic_width,
+       small_picture.height      as space_small_pic_height,
+       background_picture.url    as background_picture_url,
+       background_picture.width  as background_picture_width,
+       background_picture.height as background_picture_height
 FROM spaces s
-         left join pictures small_picture on s.small_picture_id
-         left join pictures background_picture on s.background_picture_id
+         left join pictures small_picture on s.small_picture_id = small_picture.id
+         left join pictures background_picture on s.background_picture_id = background_picture.id
 WHERE s.parent_id = $1
 `
 
 type GetSpacesOfParentRow struct {
-	Space     Space
-	Picture   Picture
-	Picture_2 Picture
+	Space                   Space
+	SpaceSmallPicUrl        sql.NullString
+	SpaceSmallPicWidth      sql.NullInt64
+	SpaceSmallPicHeight     sql.NullInt64
+	BackgroundPictureUrl    sql.NullString
+	BackgroundPictureWidth  sql.NullInt64
+	BackgroundPictureHeight sql.NullInt64
 }
 
 func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetSpacesOfParentRow, error) {
@@ -185,18 +203,12 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetS
 			&i.Space.Ts,
 			&i.Space.SmallPictureID,
 			&i.Space.BackgroundPictureID,
-			&i.Picture.ID,
-			&i.Picture.PostID,
-			&i.Picture.CommentID,
-			&i.Picture.Url,
-			&i.Picture.Width,
-			&i.Picture.Height,
-			&i.Picture_2.ID,
-			&i.Picture_2.PostID,
-			&i.Picture_2.CommentID,
-			&i.Picture_2.Url,
-			&i.Picture_2.Width,
-			&i.Picture_2.Height,
+			&i.SpaceSmallPicUrl,
+			&i.SpaceSmallPicWidth,
+			&i.SpaceSmallPicHeight,
+			&i.BackgroundPictureUrl,
+			&i.BackgroundPictureWidth,
+			&i.BackgroundPictureHeight,
 		); err != nil {
 			return nil, err
 		}
@@ -212,19 +224,29 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetS
 }
 
 const getUserSpaces = `-- name: GetUserSpaces :many
-SELECT sp.id, sp.parent_id, sp.name, sp.description, sp.is_deleted, sp.created, sp.ts, sp.small_picture_id, sp.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+SELECT sp.id, sp.parent_id, sp.name, sp.description, sp.is_deleted, sp.created, sp.ts, sp.small_picture_id, sp.background_picture_id,
+       small_picture.url         as space_small_pic_url,
+       small_picture.width       as space_small_pic_width,
+       small_picture.height      as space_small_pic_height,
+       background_picture.url    as background_picture_url,
+       background_picture.width  as background_picture_width,
+       background_picture.height as background_picture_height
 FROM subscriptions su
          JOIN spaces sp ON su.space_id = sp.id
-         left join pictures small_picture on s.small_picture_id
-         left join pictures background_picture on s.background_picture_id
+         left join pictures small_picture on s.small_picture_id = small_picture.id
+         left join pictures background_picture on s.background_picture_id = background_picture.id
 WHERE su.user_id = $1
   AND su.is_deleted = false
 `
 
 type GetUserSpacesRow struct {
-	Space     Space
-	Picture   Picture
-	Picture_2 Picture
+	Space                   Space
+	SpaceSmallPicUrl        sql.NullString
+	SpaceSmallPicWidth      sql.NullInt64
+	SpaceSmallPicHeight     sql.NullInt64
+	BackgroundPictureUrl    sql.NullString
+	BackgroundPictureWidth  sql.NullInt64
+	BackgroundPictureHeight sql.NullInt64
 }
 
 func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpacesRow, error) {
@@ -246,18 +268,12 @@ func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpa
 			&i.Space.Ts,
 			&i.Space.SmallPictureID,
 			&i.Space.BackgroundPictureID,
-			&i.Picture.ID,
-			&i.Picture.PostID,
-			&i.Picture.CommentID,
-			&i.Picture.Url,
-			&i.Picture.Width,
-			&i.Picture.Height,
-			&i.Picture_2.ID,
-			&i.Picture_2.PostID,
-			&i.Picture_2.CommentID,
-			&i.Picture_2.Url,
-			&i.Picture_2.Width,
-			&i.Picture_2.Height,
+			&i.SpaceSmallPicUrl,
+			&i.SpaceSmallPicWidth,
+			&i.SpaceSmallPicHeight,
+			&i.BackgroundPictureUrl,
+			&i.BackgroundPictureWidth,
+			&i.BackgroundPictureHeight,
 		); err != nil {
 			return nil, err
 		}
@@ -273,18 +289,28 @@ func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpa
 }
 
 const searchSpace = `-- name: SearchSpace :many
-SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, small_picture.id, small_picture.post_id, small_picture.comment_id, small_picture.url, small_picture.width, small_picture.height, background_picture.id, background_picture.post_id, background_picture.comment_id, background_picture.url, background_picture.width, background_picture.height
+SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id,
+       small_picture.url         as space_small_pic_url,
+       small_picture.width       as space_small_pic_width,
+       small_picture.height      as space_small_pic_height,
+       background_picture.url    as background_picture_url,
+       background_picture.width  as background_picture_width,
+       background_picture.height as background_picture_height
 FROM spaces s
-         left join pictures small_picture on s.small_picture_id
-         left join pictures background_picture on s.background_picture_id
+         left join pictures small_picture on s.small_picture_id = small_picture.id
+         left join pictures background_picture on s.background_picture_id = background_picture.id
 WHERE id != 1
 ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC
 `
 
 type SearchSpaceRow struct {
-	Space     Space
-	Picture   Picture
-	Picture_2 Picture
+	Space                   Space
+	SpaceSmallPicUrl        sql.NullString
+	SpaceSmallPicWidth      sql.NullInt64
+	SpaceSmallPicHeight     sql.NullInt64
+	BackgroundPictureUrl    sql.NullString
+	BackgroundPictureWidth  sql.NullInt64
+	BackgroundPictureHeight sql.NullInt64
 }
 
 func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]SearchSpaceRow, error) {
@@ -306,18 +332,12 @@ func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Sea
 			&i.Space.Ts,
 			&i.Space.SmallPictureID,
 			&i.Space.BackgroundPictureID,
-			&i.Picture.ID,
-			&i.Picture.PostID,
-			&i.Picture.CommentID,
-			&i.Picture.Url,
-			&i.Picture.Width,
-			&i.Picture.Height,
-			&i.Picture_2.ID,
-			&i.Picture_2.PostID,
-			&i.Picture_2.CommentID,
-			&i.Picture_2.Url,
-			&i.Picture_2.Width,
-			&i.Picture_2.Height,
+			&i.SpaceSmallPicUrl,
+			&i.SpaceSmallPicWidth,
+			&i.SpaceSmallPicHeight,
+			&i.BackgroundPictureUrl,
+			&i.BackgroundPictureWidth,
+			&i.BackgroundPictureHeight,
 		); err != nil {
 			return nil, err
 		}

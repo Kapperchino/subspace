@@ -6,7 +6,8 @@ type PostCreation struct {
 	SpaceId     int64       `validate:"required" json:"space_id"`
 	PosterId    int64       `validate:"required" json:"poster_id"`
 	Topic       string      `validate:"max=6000" json:"topic"`
-	Body        string      `validate:"required_without_all=FileIds,max=60000" json:"body"`
+	Body        string      `validate:"required_without_all=FileIds Link,max=60000" json:"body"`
+	Link        string      `validate:"required_without_all=FileIds Body,max=60000" json:"link"`
 	ContentType ContentType `json:"content_type"`
 	FileIds     []int64     `json:"file_ids"`
 }

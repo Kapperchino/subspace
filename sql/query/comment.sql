@@ -33,7 +33,7 @@ WITH RECURSIVE allCommentsForPost AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
-       p.*,
+       
        v.*,
        u.display_name,
        (SELECT COUNT(id)
@@ -51,8 +51,7 @@ SELECT sqlc.embed(c),
 FROM allCommentsForPost c
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-         join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id;
+         join users u on c.poster_id = u.id;
 
 -- name: GetCommentsForComment :many
 WITH RECURSIVE allCommentsForComment AS (
@@ -85,7 +84,7 @@ WITH RECURSIVE allCommentsForComment AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
-       p.*,
+       
        v.*,
        u.display_name,
        (SELECT COUNT(id)
@@ -103,11 +102,10 @@ SELECT sqlc.embed(c),
 FROM allCommentsForComment c
          join users u on c.poster_id = u.id
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
-                              v.vote_type = 'comment'
-         left join pictures p on c.id = p.comment_id;
+                              v.vote_type = 'comment';
 -- name: GetCommentsForUser :many
 SELECT sqlc.embed(c),
-       p.*,
+       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -123,11 +121,10 @@ SELECT sqlc.embed(c),
           AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id
 where u.id = $1;
 -- name: GetComment :one
 SELECT sqlc.embed(c),
-       p.*,
+       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -143,7 +140,6 @@ SELECT sqlc.embed(c),
           AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id
 where c.id = $1;
 
 -- name: GetCommenter :one

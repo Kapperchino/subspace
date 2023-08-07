@@ -44,6 +44,23 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 	if req.FileType != models.FILE_PICTURE {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
+	if req.IsLink {
+		res, err := queries.CreatePicture(c.Context(), gen.CreatePictureParams{
+			Url:    req.PictureMeta.Url,
+			Width:  req.PictureMeta.Width,
+			Height: req.PictureMeta.Height,
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		return c.Status(200).JSON(models.PictureMetaResult{
+			Presigned: "",
+			Width:     res.Width,
+			Height:    res.Height,
+			Id:        res.ID,
+		})
+	}
 	preSigned, fileName, err := d.getPresigned(c)
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting presigned url for picture")

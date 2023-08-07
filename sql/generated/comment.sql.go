@@ -48,7 +48,7 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (C
 
 const getComment = `-- name: GetComment :one
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       p.id, p.post_id, p.comment_id, p.url, p.width, p.height,
+       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -64,18 +64,11 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_d
           AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id
 where c.id = $1
 `
 
 type GetCommentRow struct {
 	Comment     Comment
-	ID          sql.NullInt64
-	PostID      sql.NullInt64
-	CommentID   sql.NullInt64
-	Url         sql.NullString
-	Width       sql.NullInt64
-	Height      sql.NullInt64
 	DisplayName string
 	UpVotes     int64
 	DownVotes   int64
@@ -93,12 +86,6 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 		&i.Comment.ContentType,
 		&i.Comment.IsDeleted,
 		&i.Comment.Created,
-		&i.ID,
-		&i.PostID,
-		&i.CommentID,
-		&i.Url,
-		&i.Width,
-		&i.Height,
 		&i.DisplayName,
 		&i.UpVotes,
 		&i.DownVotes,
@@ -160,7 +147,7 @@ WITH RECURSIVE allCommentsForComment AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       p.id, p.post_id, p.comment_id, p.url, p.width, p.height,
+       
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        u.display_name,
        (SELECT COUNT(id)
@@ -179,7 +166,6 @@ FROM allCommentsForComment c
          join users u on c.poster_id = u.id
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-         left join pictures p on c.id = p.comment_id
 `
 
 type GetCommentsForCommentParams struct {
@@ -190,12 +176,6 @@ type GetCommentsForCommentParams struct {
 type GetCommentsForCommentRow struct {
 	Comment         Comment
 	ID              sql.NullInt64
-	PostID          sql.NullInt64
-	CommentID       sql.NullInt64
-	Url             sql.NullString
-	Width           sql.NullInt64
-	Height          sql.NullInt64
-	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
@@ -225,12 +205,6 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 			&i.Comment.IsDeleted,
 			&i.Comment.Created,
 			&i.ID,
-			&i.PostID,
-			&i.CommentID,
-			&i.Url,
-			&i.Width,
-			&i.Height,
-			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
@@ -283,7 +257,7 @@ WITH RECURSIVE allCommentsForPost AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       p.id, p.post_id, p.comment_id, p.url, p.width, p.height,
+       
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        u.display_name,
        (SELECT COUNT(id)
@@ -302,7 +276,6 @@ FROM allCommentsForPost c
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
          join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id
 `
 
 type GetCommentsForPostParams struct {
@@ -313,12 +286,6 @@ type GetCommentsForPostParams struct {
 type GetCommentsForPostRow struct {
 	Comment         Comment
 	ID              sql.NullInt64
-	PostID          sql.NullInt64
-	CommentID       sql.NullInt64
-	Url             sql.NullString
-	Width           sql.NullInt64
-	Height          sql.NullInt64
-	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
@@ -348,12 +315,6 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 			&i.Comment.IsDeleted,
 			&i.Comment.Created,
 			&i.ID,
-			&i.PostID,
-			&i.CommentID,
-			&i.Url,
-			&i.Width,
-			&i.Height,
-			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
@@ -378,7 +339,7 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 
 const getCommentsForUser = `-- name: GetCommentsForUser :many
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       p.id, p.post_id, p.comment_id, p.url, p.width, p.height,
+       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -394,18 +355,11 @@ SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_d
           AND v.vote_type = 'comment') AS down_votes
 FROM comments c
          join users u on c.poster_id = u.id
-         left join pictures p on c.id = p.comment_id
 where u.id = $1
 `
 
 type GetCommentsForUserRow struct {
 	Comment     Comment
-	ID          sql.NullInt64
-	PostID      sql.NullInt64
-	CommentID   sql.NullInt64
-	Url         sql.NullString
-	Width       sql.NullInt64
-	Height      sql.NullInt64
 	DisplayName string
 	UpVotes     int64
 	DownVotes   int64
@@ -429,12 +383,6 @@ func (q *Queries) GetCommentsForUser(ctx context.Context, id int64) ([]GetCommen
 			&i.Comment.ContentType,
 			&i.Comment.IsDeleted,
 			&i.Comment.Created,
-			&i.ID,
-			&i.PostID,
-			&i.CommentID,
-			&i.Url,
-			&i.Width,
-			&i.Height,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,

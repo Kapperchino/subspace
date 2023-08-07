@@ -43,7 +43,7 @@ func (q *Queries) CreateTagRelation(ctx context.Context, arg CreateTagRelationPa
 }
 
 const getPostsWithTagsLatest = `-- name: GetPostsWithTagsLatest :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link,
        u.display_name,
        user_pic.url                 as user_pic_url,
        user_pic.width               as user_pic_width,
@@ -73,7 +73,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 
@@ -129,6 +129,7 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 			&i.Post.IsDeleted,
 			&i.Post.Created,
 			&i.Post.Ts,
+			&i.Post.Link,
 			&i.DisplayName,
 			&i.UserPicUrl,
 			&i.UserPicWidth,
@@ -161,7 +162,7 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 }
 
 const getPostsWithTagsPopular = `-- name: GetPostsWithTagsPopular :many
-SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts,
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link,
        u.display_name,
        user_pic.url                 as user_pic_url,
        user_pic.width               as user_pic_width,
@@ -192,7 +193,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 
@@ -248,6 +249,7 @@ func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithT
 			&i.Post.IsDeleted,
 			&i.Post.Created,
 			&i.Post.Ts,
+			&i.Post.Link,
 			&i.DisplayName,
 			&i.UserPicUrl,
 			&i.UserPicWidth,

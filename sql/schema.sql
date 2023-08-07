@@ -194,8 +194,6 @@ ALTER SEQUENCE public.picture_releations_id_seq OWNED BY public.picture_releatio
 
 CREATE TABLE public.pictures (
     id bigint NOT NULL,
-    post_id bigint,
-    comment_id bigint,
     url text NOT NULL,
     width bigint NOT NULL,
     height bigint NOT NULL
@@ -234,7 +232,8 @@ CREATE TABLE public.posts (
     content_type public.content_type DEFAULT 'text'::public.content_type,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(body, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(topic, ''::text)), 'B'::"char"))) STORED
+    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(body, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(topic, ''::text)), 'B'::"char"))) STORED,
+    link text
 );
 
 
@@ -873,4 +872,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230727190300'),
     ('20230727223653'),
     ('20230730211929'),
-    ('20230801224840');
+    ('20230801224840'),
+    ('20230807184711');

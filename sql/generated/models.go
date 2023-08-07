@@ -122,12 +122,10 @@ type Mention struct {
 }
 
 type Picture struct {
-	ID        int64
-	PostID    sql.NullInt64
-	CommentID sql.NullInt64
-	Url       string
-	Width     int64
-	Height    int64
+	ID     int64
+	Url    string
+	Width  int64
+	Height int64
 }
 
 type PictureReleation struct {
@@ -147,6 +145,7 @@ type Post struct {
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 	Ts          interface{}
+	Link        sql.NullString
 }
 
 type Space struct {

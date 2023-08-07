@@ -14,13 +14,15 @@ type PictureMetaResult struct {
 }
 
 type PictureRequestMeta struct {
-	Width  int64 `validate:"required" json:"width"`
-	Height int64 `validate:"required" json:"height"`
+	Width  int64  `validate:"required" json:"width"`
+	Height int64  `validate:"required" json:"height"`
+	Url    string `json:"url"`
 }
 
 type FileUploadRequest struct {
 	PictureMeta *PictureRequestMeta `json:"picture_meta"`
 	FileType    FileType            `validate:"required" json:"file_type"`
+	IsLink      bool                `json:"is_link"`
 }
 
 type FileType string

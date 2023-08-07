@@ -32,7 +32,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id != 1
   AND current_timestamp - p.created
@@ -68,7 +68,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id = $1
 LIMIT 1;
@@ -102,7 +102,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE s.name = $1
   AND s.parent_id = $2
@@ -139,7 +139,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.space_id = $1
   AND p.id != 1
@@ -175,7 +175,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
@@ -210,7 +210,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $3 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE s.name = $1
   AND s.parent_id = $2
@@ -247,7 +247,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $2 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.space_id = $1
   AND p.id != 1
@@ -283,7 +283,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id != 1
   AND current_timestamp - p.created
@@ -319,7 +319,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.poster_id = $1
   AND p.id != 1;
@@ -354,7 +354,7 @@ FROM posts p
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id != 1
   AND s.id != 1
@@ -391,7 +391,7 @@ FROM posts p
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
          join subscriptions su on su.space_id = p.space_id and su.user_id = $1 and su.is_deleted = false
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 WHERE p.id != 1
   AND s.id != 1

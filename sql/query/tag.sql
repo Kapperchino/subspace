@@ -46,7 +46,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 
@@ -86,7 +86,7 @@ FROM posts p
          join spaces s on s.id = p.space_id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
-         left join pictures user_pic on user_pic.post_id = p.id
+         left join pictures user_pic on u.picture_id = user_pic.id
          left join pictures space_small_pic on s.small_picture_id = space_small_pic.id
 
 

@@ -12,10 +12,9 @@ import (
 )
 
 type PostService struct {
-	DB           *sql.DB
-	Config       *util.Config
-	Validation   *util.Validation
-	UploadClient *util.UploadClient
+	DB         *sql.DB
+	Config     *util.Config
+	Validation *util.Validation
 }
 
 func (u *PostService) getDB() *sql.DB {
@@ -109,7 +108,7 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 
-	if req.ContentType == models.CONTENT_PICTURE && req.FileIds == nil {
+	if req.ContentType == models.CONTENT_PICTURE && req.FileIds != nil {
 		for _, id := range req.FileIds {
 			_, err := queries.CreatePictureRelation(c.Context(), gen.CreatePictureRelationParams{
 				PictureID: sql.NullInt64{

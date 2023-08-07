@@ -33,7 +33,7 @@ WITH RECURSIVE allCommentsForPost AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
-       sqlc.embed(p),
+       p.*,
        v.*,
        u.display_name,
        (SELECT COUNT(id)
@@ -85,7 +85,7 @@ WITH RECURSIVE allCommentsForComment AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT sqlc.embed(c),
-       sqlc.embed(p),
+       p.*,
        v.*,
        u.display_name,
        (SELECT COUNT(id)
@@ -107,7 +107,7 @@ FROM allCommentsForComment c
          left join pictures p on c.id = p.comment_id;
 -- name: GetCommentsForUser :many
 SELECT sqlc.embed(c),
-       sqlc.embed(p),
+       p.*,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -127,7 +127,7 @@ FROM comments c
 where u.id = $1;
 -- name: GetComment :one
 SELECT sqlc.embed(c),
-       sqlc.embed(p),
+       p.*,
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v

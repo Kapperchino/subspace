@@ -44,7 +44,7 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 	if req.FileType != models.FILE_PICTURE {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	_, fileName, err := d.getPresigned(c)
+	preSigned, fileName, err := d.getPresigned(c)
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting presigned url for picture")
 		return c.SendStatus(fiber.StatusInternalServerError)
@@ -61,10 +61,10 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 		}
 		return c.Status(200).JSON(models.PictureMetaResult{
-			Url:    res.Url,
-			Width:  res.Width,
-			Height: res.Height,
-			Id:     res.ID,
+			Presigned: preSigned,
+			Width:     res.Width,
+			Height:    res.Height,
+			Id:        res.ID,
 		})
 	}
 	return c.SendStatus(fiber.StatusBadRequest)

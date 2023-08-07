@@ -63,10 +63,9 @@ func main() {
 	}
 
 	postService := server.PostService{
-		DB:           db,
-		Config:       config,
-		Validation:   validation,
-		UploadClient: uploadClient,
+		DB:         db,
+		Config:     config,
+		Validation: validation,
 	}
 
 	voteService := server.VoteService{
@@ -97,6 +96,13 @@ func main() {
 		DB:         db,
 		Config:     config,
 		Validation: validation,
+	}
+
+	fileService := server.FileService{
+		DB:           db,
+		Config:       config,
+		Validation:   validation,
+		UploadClient: uploadClient,
 	}
 
 	app.Use(cors.New())
@@ -171,6 +177,9 @@ func main() {
 	app.Put("/devices", deviceService.UpdateRegistration)
 
 	app.Get("/devices/users/:", deviceService.GetDevice)
+
+	//files
+	app.Put("/files", fileService.UploadFile)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

@@ -4,6 +4,7 @@ type PictureMeta struct {
 	Url    string `validate:"required" json:"url"`
 	Width  int64  `validate:"required" json:"width"`
 	Height int64  `validate:"required" json:"height"`
+	Id     int64  `json:"id"`
 }
 
 type PictureMetaResult struct {

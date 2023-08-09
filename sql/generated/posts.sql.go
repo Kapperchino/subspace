@@ -11,8 +11,8 @@ import (
 )
 
 const createPost = `-- name: CreatePost :one
-INSERT INTO posts (space_id, poster_id, topic, body, content_type)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO posts (space_id, poster_id, topic, body, content_type, link)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, space_id, poster_id, topic, body, content_type, is_deleted, created, ts, link
 `
 
@@ -22,6 +22,7 @@ type CreatePostParams struct {
 	Topic       sql.NullString
 	Body        sql.NullString
 	ContentType NullContentType
+	Link        sql.NullString
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		arg.Topic,
 		arg.Body,
 		arg.ContentType,
+		arg.Link,
 	)
 	var i Post
 	err := row.Scan(

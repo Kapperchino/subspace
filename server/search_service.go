@@ -90,13 +90,13 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 				return err
 			}
 			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
+				Id:          post.Post.ID,
+				SpaceId:     post.Post.SpaceID.Int64,
+				PosterId:    post.Post.PosterID.Int64,
+				Topic:       post.Post.Topic.String,
+				PosterName:  post.DisplayName,
+				ContentType: models.ContentType(post.Post.ContentType.ContentType),
+				Body:        post.Post.Body.String, Link: post.Post.Link.String,
 				UpVotes:       post.UpVotes,
 				DownVotes:     post.DownVotes,
 				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),
@@ -130,13 +130,13 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 			return err
 		}
 		list = append(list, models.Post{
-			Id:            post.Post.ID,
-			SpaceId:       post.Post.SpaceID.Int64,
-			PosterId:      post.Post.PosterID.Int64,
-			Topic:         post.Post.Topic.String,
-			PosterName:    post.DisplayName,
-			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-			Body:          post.Post.Body.String,
+			Id:          post.Post.ID,
+			SpaceId:     post.Post.SpaceID.Int64,
+			PosterId:    post.Post.PosterID.Int64,
+			Topic:       post.Post.Topic.String,
+			PosterName:  post.DisplayName,
+			ContentType: models.ContentType(post.Post.ContentType.ContentType),
+			Body:        post.Post.Body.String, Link: post.Post.Link.String,
 			UpVotes:       post.UpVotes,
 			DownVotes:     post.DownVotes,
 			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight),

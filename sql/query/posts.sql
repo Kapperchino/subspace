@@ -1,6 +1,6 @@
 -- name: CreatePost :one
-INSERT INTO posts (space_id, poster_id, topic, body, content_type)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO posts (space_id, poster_id, topic, body, content_type, link)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: SearchPost :many

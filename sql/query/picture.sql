@@ -14,6 +14,11 @@ FROM pictures p
          join picture_releations pr on p.id = pr.picture_id
 where pr.post_id = $1;
 
+-- name: GetPicture :one
+SELECT p.*
+FROM pictures p
+where p.id = $1;
+
 -- name: GetPicturesForComment :many
 SELECT p.*
 FROM pictures p

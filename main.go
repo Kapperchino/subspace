@@ -181,5 +181,7 @@ func main() {
 	//files
 	app.Put("/files", fileService.UploadFile)
 
+	app.Get("/files/:id", fileService.GetFile)
+
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

@@ -22,6 +22,7 @@ type Post struct {
 	PosterName    string         `json:"poster_name"`
 	PosterPicture *PictureMeta   `json:"poster_picture"`
 	Topic         string         `json:"topic"`
+	Link          string         `json:"link"`
 	Body          string         `json:"body"`
 	PostPictures  []*PictureMeta `json:"post_pictures"`
 	ContentType   ContentType    `json:"content_type"`

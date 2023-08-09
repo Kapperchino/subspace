@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -85,6 +86,28 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 		})
 	}
 	return c.SendStatus(fiber.StatusBadRequest)
+}
+
+func (d *FileService) GetFile(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id", -1)
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(d.getDB())
+	pic, err := queries.GetPicture(c.Context(), int64(id))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		log.Error().Err(err).Msg("error quering picture")
+	}
+	res := models.PictureMeta{
+		Url:    pic.Url,
+		Width:  pic.Width,
+		Height: pic.Height,
+		Id:     pic.ID,
+	}
+	return c.JSON(res)
 }
 
 func (d *FileService) getPresigned(c *fiber.Ctx) (string, string, error) {

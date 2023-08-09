@@ -60,6 +60,24 @@ func (q *Queries) CreatePictureRelation(ctx context.Context, arg CreatePictureRe
 	return i, err
 }
 
+const getPicture = `-- name: GetPicture :one
+SELECT p.id, p.url, p.width, p.height
+FROM pictures p
+where p.id = $1
+`
+
+func (q *Queries) GetPicture(ctx context.Context, id int64) (Picture, error) {
+	row := q.db.QueryRowContext(ctx, getPicture, id)
+	var i Picture
+	err := row.Scan(
+		&i.ID,
+		&i.Url,
+		&i.Width,
+		&i.Height,
+	)
+	return i, err
+}
+
 const getPicturesForComment = `-- name: GetPicturesForComment :many
 SELECT p.id, p.url, p.width, p.height
 FROM pictures p

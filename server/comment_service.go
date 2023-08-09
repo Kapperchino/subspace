@@ -133,16 +133,16 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		var list []models.Comment
 		for _, comment := range res {
 			list = append(list, models.Comment{
-				Id:          comment.Comment.ID,
-				PosterId:    comment.Comment.PosterID,
-				PostId:      comment.Comment.PostID,
-				ParentId:    comment.Comment.ParentID.Int64,
+				Id:          comment.ID,
+				PosterId:    comment.PosterID,
+				PostId:      comment.PostID,
+				ParentId:    comment.ParentID.Int64,
 				PosterName:  comment.DisplayName,
-				Body:        comment.Comment.Body,
-				ContentType: models.ContentType(comment.Comment.ContentType.ContentType),
+				Body:        comment.Body,
+				ContentType: models.ContentType(comment.ContentType.ContentType),
 				UpVotes:     comment.UpVotes,
 				DownVotes:   comment.DownVotes,
-				Created:     comment.Comment.Created.Time,
+				Created:     comment.Created.Time,
 				Vote:        getVote(comment.IsUpVote, comment.VoteType),
 			})
 		}
@@ -162,16 +162,16 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	var list []models.Comment
 	for _, comment := range res {
 		list = append(list, models.Comment{
-			Id:          comment.Comment.ID,
-			PosterId:    comment.Comment.PosterID,
-			PostId:      comment.Comment.PostID,
-			ParentId:    comment.Comment.ParentID.Int64,
+			Id:          comment.ID,
+			PosterId:    comment.PosterID,
+			PostId:      comment.PostID,
+			ParentId:    comment.ParentID.Int64,
 			PosterName:  comment.DisplayName,
-			Body:        comment.Comment.Body,
-			ContentType: models.ContentType(comment.Comment.ContentType.ContentType),
+			Body:        comment.Body,
+			ContentType: models.ContentType(comment.ContentType.ContentType),
 			UpVotes:     comment.UpVotes,
 			DownVotes:   comment.DownVotes,
-			Created:     comment.Comment.Created.Time,
+			Created:     comment.Created.Time,
 			Vote:        getVote(comment.IsUpVote, comment.VoteType),
 		})
 	}

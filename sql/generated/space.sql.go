@@ -117,8 +117,8 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
-WHERE name = $1
-  AND parent_id = $2
+WHERE s.name = $1
+  AND s.parent_id = $2
 LIMIT 1
 `
 
@@ -299,7 +299,7 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
-WHERE id != 1
+WHERE s.id != 1
 ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC
 `
 

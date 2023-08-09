@@ -48,7 +48,6 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (C
 
 const getComment = `-- name: GetComment :one
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v
@@ -147,7 +146,6 @@ WITH RECURSIVE allCommentsForComment AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        u.display_name,
        (SELECT COUNT(id)
@@ -174,13 +172,21 @@ type GetCommentsForCommentParams struct {
 }
 
 type GetCommentsForCommentRow struct {
-	Comment         Comment
-	ID              sql.NullInt64
+	ID              int64
+	PostID          int64
+	PosterID        int64
+	ParentID        sql.NullInt64
+	Body            string
+	ContentType     NullContentType
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	Level           int32
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
 	VoteType        NullVoteType
-	IsDeleted       sql.NullBool
+	IsDeleted_2     sql.NullBool
 	DisplayName     string
 	UpVotes         int64
 	DownVotes       int64
@@ -196,20 +202,21 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 	for rows.Next() {
 		var i GetCommentsForCommentRow
 		if err := rows.Scan(
-			&i.Comment.ID,
-			&i.Comment.PostID,
-			&i.Comment.PosterID,
-			&i.Comment.ParentID,
-			&i.Comment.Body,
-			&i.Comment.ContentType,
-			&i.Comment.IsDeleted,
-			&i.Comment.Created,
 			&i.ID,
+			&i.PostID,
+			&i.PosterID,
+			&i.ParentID,
+			&i.Body,
+			&i.ContentType,
+			&i.IsDeleted,
+			&i.Created,
+			&i.Level,
+			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
 			&i.VoteType,
-			&i.IsDeleted,
+			&i.IsDeleted_2,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
@@ -257,7 +264,6 @@ WITH RECURSIVE allCommentsForPost AS (
                         ON c.parent_id = c1.id
     WHERE c1.level < 3)
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        u.display_name,
        (SELECT COUNT(id)
@@ -284,13 +290,21 @@ type GetCommentsForPostParams struct {
 }
 
 type GetCommentsForPostRow struct {
-	Comment         Comment
-	ID              sql.NullInt64
+	ID              int64
+	PostID          int64
+	PosterID        int64
+	ParentID        sql.NullInt64
+	Body            string
+	ContentType     NullContentType
+	IsDeleted       sql.NullBool
+	Created         sql.NullTime
+	Level           int32
+	ID_2            sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
 	VoteType        NullVoteType
-	IsDeleted       sql.NullBool
+	IsDeleted_2     sql.NullBool
 	DisplayName     string
 	UpVotes         int64
 	DownVotes       int64
@@ -306,20 +320,21 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 	for rows.Next() {
 		var i GetCommentsForPostRow
 		if err := rows.Scan(
-			&i.Comment.ID,
-			&i.Comment.PostID,
-			&i.Comment.PosterID,
-			&i.Comment.ParentID,
-			&i.Comment.Body,
-			&i.Comment.ContentType,
-			&i.Comment.IsDeleted,
-			&i.Comment.Created,
 			&i.ID,
+			&i.PostID,
+			&i.PosterID,
+			&i.ParentID,
+			&i.Body,
+			&i.ContentType,
+			&i.IsDeleted,
+			&i.Created,
+			&i.Level,
+			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
 			&i.VoteType,
-			&i.IsDeleted,
+			&i.IsDeleted_2,
 			&i.DisplayName,
 			&i.UpVotes,
 			&i.DownVotes,
@@ -339,7 +354,6 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 
 const getCommentsForUser = `-- name: GetCommentsForUser :many
 SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       
        u.display_name,
        (SELECT COUNT(id)
         FROM votes v

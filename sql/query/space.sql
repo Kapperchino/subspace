@@ -3,9 +3,11 @@ SELECT sqlc.embed(s),
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -17,9 +19,11 @@ SELECT sqlc.embed(s),
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -30,9 +34,11 @@ SELECT sqlc.embed(s),
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -45,9 +51,11 @@ SELECT sqlc.embed(sp),
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM subscriptions su
          JOIN spaces sp ON su.space_id = sp.id
          left join pictures small_picture on s.small_picture_id = small_picture.id
@@ -60,9 +68,11 @@ SELECT sqlc.embed(s),
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id

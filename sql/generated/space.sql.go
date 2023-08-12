@@ -63,9 +63,11 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -78,9 +80,11 @@ type GetSpaceRow struct {
 	SpaceSmallPicUrl        sql.NullString
 	SpaceSmallPicWidth      sql.NullInt64
 	SpaceSmallPicHeight     sql.NullInt64
+	SpaceSmallPictureID     sql.NullInt64
 	BackgroundPictureUrl    sql.NullString
 	BackgroundPictureWidth  sql.NullInt64
 	BackgroundPictureHeight sql.NullInt64
+	BackgroundPictureID     sql.NullInt64
 }
 
 func (q *Queries) GetSpace(ctx context.Context, id int64) (GetSpaceRow, error) {
@@ -99,9 +103,11 @@ func (q *Queries) GetSpace(ctx context.Context, id int64) (GetSpaceRow, error) {
 		&i.SpaceSmallPicUrl,
 		&i.SpaceSmallPicWidth,
 		&i.SpaceSmallPicHeight,
+		&i.SpaceSmallPictureID,
 		&i.BackgroundPictureUrl,
 		&i.BackgroundPictureWidth,
 		&i.BackgroundPictureHeight,
+		&i.BackgroundPictureID,
 	)
 	return i, err
 }
@@ -111,9 +117,11 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -132,9 +140,11 @@ type GetSpaceByNameRow struct {
 	SpaceSmallPicUrl        sql.NullString
 	SpaceSmallPicWidth      sql.NullInt64
 	SpaceSmallPicHeight     sql.NullInt64
+	SpaceSmallPictureID     sql.NullInt64
 	BackgroundPictureUrl    sql.NullString
 	BackgroundPictureWidth  sql.NullInt64
 	BackgroundPictureHeight sql.NullInt64
+	BackgroundPictureID     sql.NullInt64
 }
 
 func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) (GetSpaceByNameRow, error) {
@@ -153,9 +163,11 @@ func (q *Queries) GetSpaceByName(ctx context.Context, arg GetSpaceByNameParams) 
 		&i.SpaceSmallPicUrl,
 		&i.SpaceSmallPicWidth,
 		&i.SpaceSmallPicHeight,
+		&i.SpaceSmallPictureID,
 		&i.BackgroundPictureUrl,
 		&i.BackgroundPictureWidth,
 		&i.BackgroundPictureHeight,
+		&i.BackgroundPictureID,
 	)
 	return i, err
 }
@@ -165,9 +177,11 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -179,9 +193,11 @@ type GetSpacesOfParentRow struct {
 	SpaceSmallPicUrl        sql.NullString
 	SpaceSmallPicWidth      sql.NullInt64
 	SpaceSmallPicHeight     sql.NullInt64
+	SpaceSmallPictureID     sql.NullInt64
 	BackgroundPictureUrl    sql.NullString
 	BackgroundPictureWidth  sql.NullInt64
 	BackgroundPictureHeight sql.NullInt64
+	BackgroundPictureID     sql.NullInt64
 }
 
 func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetSpacesOfParentRow, error) {
@@ -206,9 +222,11 @@ func (q *Queries) GetSpacesOfParent(ctx context.Context, parentID int64) ([]GetS
 			&i.SpaceSmallPicUrl,
 			&i.SpaceSmallPicWidth,
 			&i.SpaceSmallPicHeight,
+			&i.SpaceSmallPictureID,
 			&i.BackgroundPictureUrl,
 			&i.BackgroundPictureWidth,
 			&i.BackgroundPictureHeight,
+			&i.BackgroundPictureID,
 		); err != nil {
 			return nil, err
 		}
@@ -228,9 +246,11 @@ SELECT sp.id, sp.parent_id, sp.name, sp.description, sp.is_deleted, sp.created, 
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM subscriptions su
          JOIN spaces sp ON su.space_id = sp.id
          left join pictures small_picture on s.small_picture_id = small_picture.id
@@ -244,9 +264,11 @@ type GetUserSpacesRow struct {
 	SpaceSmallPicUrl        sql.NullString
 	SpaceSmallPicWidth      sql.NullInt64
 	SpaceSmallPicHeight     sql.NullInt64
+	SpaceSmallPictureID     sql.NullInt64
 	BackgroundPictureUrl    sql.NullString
 	BackgroundPictureWidth  sql.NullInt64
 	BackgroundPictureHeight sql.NullInt64
+	BackgroundPictureID     sql.NullInt64
 }
 
 func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpacesRow, error) {
@@ -271,9 +293,11 @@ func (q *Queries) GetUserSpaces(ctx context.Context, userID int64) ([]GetUserSpa
 			&i.SpaceSmallPicUrl,
 			&i.SpaceSmallPicWidth,
 			&i.SpaceSmallPicHeight,
+			&i.SpaceSmallPictureID,
 			&i.BackgroundPictureUrl,
 			&i.BackgroundPictureWidth,
 			&i.BackgroundPictureHeight,
+			&i.BackgroundPictureID,
 		); err != nil {
 			return nil, err
 		}
@@ -293,9 +317,11 @@ SELECT s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, 
        small_picture.url         as space_small_pic_url,
        small_picture.width       as space_small_pic_width,
        small_picture.height      as space_small_pic_height,
+       small_picture.id          as space_small_picture_id,
        background_picture.url    as background_picture_url,
        background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height
+       background_picture.height as background_picture_height,
+       background_picture.id     as background_picture_id
 FROM spaces s
          left join pictures small_picture on s.small_picture_id = small_picture.id
          left join pictures background_picture on s.background_picture_id = background_picture.id
@@ -308,9 +334,11 @@ type SearchSpaceRow struct {
 	SpaceSmallPicUrl        sql.NullString
 	SpaceSmallPicWidth      sql.NullInt64
 	SpaceSmallPicHeight     sql.NullInt64
+	SpaceSmallPictureID     sql.NullInt64
 	BackgroundPictureUrl    sql.NullString
 	BackgroundPictureWidth  sql.NullInt64
 	BackgroundPictureHeight sql.NullInt64
+	BackgroundPictureID     sql.NullInt64
 }
 
 func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]SearchSpaceRow, error) {
@@ -335,9 +363,11 @@ func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Sea
 			&i.SpaceSmallPicUrl,
 			&i.SpaceSmallPicWidth,
 			&i.SpaceSmallPicHeight,
+			&i.SpaceSmallPictureID,
 			&i.BackgroundPictureUrl,
 			&i.BackgroundPictureWidth,
 			&i.BackgroundPictureHeight,
+			&i.BackgroundPictureID,
 		); err != nil {
 			return nil, err
 		}

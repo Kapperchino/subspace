@@ -110,7 +110,8 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback()
 	queries := gen.New(u.getDB()).WithTx(tx)
-	user, err := queries.GetUserFromEmail(c.Context(), req.Email)
+	queryRes, err := queries.GetUserFromEmail(c.Context(), req.Email)
+	user := queryRes.User
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusNotFound)
@@ -181,6 +182,7 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 		Bio:         user.Bio.String,
 		Token:       t,
 		Email:       user.Email,
+		PictureMeta: getPictureMeta(queryRes.Url, queryRes.Width, queryRes.Height, queryRes.ID.Int64),
 	})
 }
 
@@ -204,8 +206,9 @@ func (u *UserService) GetUserById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.UserInfo{
-		UserID:      res.ID,
-		DisplayName: res.DisplayName,
-		Bio:         res.Bio.String,
+		UserID:      res.User.ID,
+		DisplayName: res.User.DisplayName,
+		Bio:         res.User.Bio.String,
+		PictureMeta: getPictureMeta(res.Url, res.Width, res.Height, res.ID.Int64),
 	})
 }

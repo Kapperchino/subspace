@@ -47,10 +47,10 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        u.display_name,
        user_pic.url                 as user_pic_url,
        user_pic.width               as user_pic_width,
-       user_pic.height              as user_pic_height,
+       user_pic.height              as user_pic_height, user_pic.id   as user_pic_id,
        space_small_pic.url          as space_small_pic_url,
        space_small_pic.width        as space_small_pic_width,
-       space_small_pic.height       as space_small_pic_height,
+       space_small_pic.height       as space_small_pic_height, space_small_pic.id     as space_small_pic_id,
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        s.parent_id,
        s.name                       as space_name,
@@ -95,9 +95,11 @@ type GetPostsWithTagsLatestRow struct {
 	UserPicUrl          sql.NullString
 	UserPicWidth        sql.NullInt64
 	UserPicHeight       sql.NullInt64
+	UserPicID           sql.NullInt64
 	SpaceSmallPicUrl    sql.NullString
 	SpaceSmallPicWidth  sql.NullInt64
 	SpaceSmallPicHeight sql.NullInt64
+	SpaceSmallPicID     sql.NullInt64
 	ID                  sql.NullInt64
 	IsUpVote            sql.NullBool
 	UserID              sql.NullInt64
@@ -134,9 +136,11 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 			&i.UserPicUrl,
 			&i.UserPicWidth,
 			&i.UserPicHeight,
+			&i.UserPicID,
 			&i.SpaceSmallPicUrl,
 			&i.SpaceSmallPicWidth,
 			&i.SpaceSmallPicHeight,
+			&i.SpaceSmallPicID,
 			&i.ID,
 			&i.IsUpVote,
 			&i.UserID,
@@ -166,10 +170,10 @@ SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_dele
        u.display_name,
        user_pic.url                 as user_pic_url,
        user_pic.width               as user_pic_width,
-       user_pic.height              as user_pic_height,
+       user_pic.height              as user_pic_height, user_pic.id   as user_pic_id,
        space_small_pic.url          as space_small_pic_url,
        space_small_pic.width        as space_small_pic_width,
-       space_small_pic.height       as space_small_pic_height,
+       space_small_pic.height       as space_small_pic_height, space_small_pic.id     as space_small_pic_id,
 
        v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
        s.parent_id,
@@ -215,9 +219,11 @@ type GetPostsWithTagsPopularRow struct {
 	UserPicUrl          sql.NullString
 	UserPicWidth        sql.NullInt64
 	UserPicHeight       sql.NullInt64
+	UserPicID           sql.NullInt64
 	SpaceSmallPicUrl    sql.NullString
 	SpaceSmallPicWidth  sql.NullInt64
 	SpaceSmallPicHeight sql.NullInt64
+	SpaceSmallPicID     sql.NullInt64
 	ID                  sql.NullInt64
 	IsUpVote            sql.NullBool
 	UserID              sql.NullInt64
@@ -254,9 +260,11 @@ func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithT
 			&i.UserPicUrl,
 			&i.UserPicWidth,
 			&i.UserPicHeight,
+			&i.UserPicID,
 			&i.SpaceSmallPicUrl,
 			&i.SpaceSmallPicWidth,
 			&i.SpaceSmallPicHeight,
+			&i.SpaceSmallPicID,
 			&i.ID,
 			&i.IsUpVote,
 			&i.UserID,

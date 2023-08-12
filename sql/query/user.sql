@@ -4,13 +4,15 @@ VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetUser :one
-SELECT *
-FROM users
-WHERE id = $1
+SELECT sqlc.embed(u), p.*
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.id = $1
 LIMIT 1;
 
 -- name: GetUserFromEmail :one
-SELECT *
-FROM users
-WHERE email = $1
+SELECT sqlc.embed(u), p.*
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.email = $1
 LIMIT 1;

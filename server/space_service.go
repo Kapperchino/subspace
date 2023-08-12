@@ -86,8 +86,8 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 		ID:                res.Space.ID,
 		ParentID:          res.Space.ParentID,
 		Name:              res.Space.Name,
-		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight),
-		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight),
+		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight, res.SpaceSmallPictureID.Int64),
+		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight, res.BackgroundPictureID.Int64),
 		Description:       res.Space.Description.String,
 	})
 }
@@ -115,8 +115,8 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 				ID:                space.Space.ID,
 				ParentID:          space.Space.ParentID,
 				Name:              space.Space.Name,
-				SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight),
-				BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight),
+				SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
+				BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight, space.BackgroundPictureID.Int64),
 				Description:       space.Space.Description.String,
 			})
 		}
@@ -138,8 +138,8 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		ID:                res.Space.ID,
 		ParentID:          res.Space.ParentID,
 		Name:              res.Space.Name,
-		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight),
-		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight),
+		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight, res.SpaceSmallPictureID.Int64),
+		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight, res.BackgroundPictureID.Int64),
 		Description:       res.Space.Description.String,
 	})
 }
@@ -165,8 +165,8 @@ func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
 			ID:                space.Space.ID,
 			ParentID:          space.Space.ParentID,
 			Name:              space.Space.Name,
-			SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight),
-			BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight),
+			SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
+			BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight, space.BackgroundPictureID.Int64),
 			Description:       space.Space.Description.String,
 		})
 	}

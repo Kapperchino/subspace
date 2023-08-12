@@ -45,47 +45,73 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, password, email, display_name, bio, is_deleted, created, picture_id
-FROM users
-WHERE id = $1
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, p.id, p.url, p.width, p.height
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
+type GetUserRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+}
+
+func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i User
+	var i GetUserRow
 	err := row.Scan(
+		&i.User.ID,
+		&i.User.Password,
+		&i.User.Email,
+		&i.User.DisplayName,
+		&i.User.Bio,
+		&i.User.IsDeleted,
+		&i.User.Created,
+		&i.User.PictureID,
 		&i.ID,
-		&i.Password,
-		&i.Email,
-		&i.DisplayName,
-		&i.Bio,
-		&i.IsDeleted,
-		&i.Created,
-		&i.PictureID,
+		&i.Url,
+		&i.Width,
+		&i.Height,
 	)
 	return i, err
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT id, password, email, display_name, bio, is_deleted, created, picture_id
-FROM users
-WHERE email = $1
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, p.id, p.url, p.width, p.height
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.email = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, error) {
+type GetUserFromEmailRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+}
+
+func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFromEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserFromEmail, email)
-	var i User
+	var i GetUserFromEmailRow
 	err := row.Scan(
+		&i.User.ID,
+		&i.User.Password,
+		&i.User.Email,
+		&i.User.DisplayName,
+		&i.User.Bio,
+		&i.User.IsDeleted,
+		&i.User.Created,
+		&i.User.PictureID,
 		&i.ID,
-		&i.Password,
-		&i.Email,
-		&i.DisplayName,
-		&i.Bio,
-		&i.IsDeleted,
-		&i.Created,
-		&i.PictureID,
+		&i.Url,
+		&i.Width,
+		&i.Height,
 	)
 	return i, err
 }

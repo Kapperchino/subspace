@@ -8,17 +8,19 @@ type UserCreation struct {
 }
 
 type UserMeta struct {
-	UserID      int64  `json:"user_id"`
-	DisplayName string `json:"display_name"`
-	Bio         string `json:"bio"`
-	Token       string `json:"token"`
-	Email       string `json:"email"`
+	UserID      int64        `json:"user_id"`
+	DisplayName string       `json:"display_name"`
+	PictureMeta *PictureMeta `json:"picture_meta"`
+	Bio         string       `json:"bio"`
+	Token       string       `json:"token"`
+	Email       string       `json:"email"`
 }
 
 type UserInfo struct {
-	UserID      int64  `json:"user_id"`
-	DisplayName string `json:"display_name"`
-	Bio         string `json:"bio"`
+	UserID      int64        `json:"user_id"`
+	DisplayName string       `json:"display_name"`
+	Bio         string       `json:"bio"`
+	PictureMeta *PictureMeta `json:"picture_meta"`
 }
 
 type Login struct {

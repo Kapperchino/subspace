@@ -115,3 +115,20 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFr
 	)
 	return i, err
 }
+
+const updateUserBio = `-- name: UpdateUserBio :exec
+UPDATE users
+set bio = $1
+where id = $2
+RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id
+`
+
+type UpdateUserBioParams struct {
+	Bio sql.NullString
+	ID  int64
+}
+
+func (q *Queries) UpdateUserBio(ctx context.Context, arg UpdateUserBioParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserBio, arg.Bio, arg.ID)
+	return err
+}

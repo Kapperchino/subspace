@@ -3,6 +3,12 @@ INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
+-- name: UpdateUserBio :exec
+UPDATE users
+set bio = $1
+where id = $2
+RETURNING *;
+
 -- name: GetUser :one
 SELECT sqlc.embed(u), p.*
 FROM users u

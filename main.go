@@ -121,6 +121,8 @@ func main() {
 	//user
 	app.Get("/users/:id", userService.GetUserById)
 
+	app.Put("/users/:id", userService.UpdateUserBio)
+
 	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 

@@ -212,3 +212,37 @@ func (u *UserService) GetUserById(c *fiber.Ctx) error {
 		PictureMeta: getPictureMeta(res.Url, res.Width, res.Height, res.ID.Int64),
 	})
 }
+
+func (u *UserService) UpdateUserBio(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id", -1)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+	if id == -1 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	req := new(models.UserBioUpdate)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+	queries := gen.New(u.getDB())
+	err = queries.UpdateUserBio(c.Context(), gen.UpdateUserBioParams{
+		Bio: sql.NullString{
+			String: req.Bio,
+			Valid:  true,
+		},
+		ID: int64(id),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Send(nil)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	return c.SendStatus(200)
+}

@@ -7,6 +7,10 @@ type UserCreation struct {
 	Bio         string `json:"bio"`
 }
 
+type UserBioUpdate struct {
+	Bio string `validate:"required" json:"bio"`
+}
+
 type UserMeta struct {
 	UserID      int64        `json:"user_id"`
 	DisplayName string       `json:"display_name"`

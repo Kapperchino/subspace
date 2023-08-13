@@ -148,6 +148,32 @@ type Post struct {
 	Link        sql.NullString
 }
 
+type PostsView struct {
+	ID                  int64
+	SpaceID             sql.NullInt64
+	PosterID            sql.NullInt64
+	Topic               sql.NullString
+	Body                sql.NullString
+	ContentType         NullContentType
+	IsDeleted           sql.NullBool
+	Created             sql.NullTime
+	Ts                  interface{}
+	Link                sql.NullString
+	DisplayName         string
+	UserPicUrl          sql.NullString
+	UserPicWidth        sql.NullInt64
+	UserPicHeight       sql.NullInt64
+	UserPicID           sql.NullInt64
+	SpaceSmallPicUrl    sql.NullString
+	SpaceSmallPicWidth  sql.NullInt64
+	SpaceSmallPicHeight sql.NullInt64
+	SpaceSmallPicID     sql.NullInt64
+	ParentID            int64
+	SpaceName           string
+	UpVotes             int64
+	DownVotes           int64
+}
+
 type Space struct {
 	ID                  int64
 	ParentID            int64

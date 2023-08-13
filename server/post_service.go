@@ -187,29 +187,11 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	pictures, err := getPicturesForPost(res.Post.ID, queries, c)
+	postModel, err := getPost(res.PostsView, res.IsUpVote, res.VoteType, queries, c)
 	if err != nil {
 		return err
 	}
-	return c.JSON(models.Post{
-		Id:            res.Post.ID,
-		SpaceId:       res.Post.SpaceID.Int64,
-		PosterId:      res.Post.PosterID.Int64,
-		PosterName:    res.DisplayName,
-		Topic:         res.Post.Topic.String,
-		Link:          res.Post.Link.String,
-		Body:          res.Post.Body.String,
-		ContentType:   models.ContentType(res.Post.ContentType.ContentType),
-		UpVotes:       res.UpVotes,
-		DownVotes:     res.DownVotes,
-		PosterPicture: getPictureMeta(res.UserPicUrl, res.UserPicWidth, res.UserPicHeight, res.UserPicID.Int64),
-		SpacePicture:  getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight, res.SpaceSmallPicID.Int64),
-		PostPictures:  pictures,
-		Created:       res.Post.Created.Time,
-		Vote:          getVote(res.IsUpVote, res.VoteType),
-		SpaceParentId: res.ParentID,
-		SpaceName:     res.SpaceName,
-	})
+	return c.JSON(postModel)
 }
 
 func (u *PostService) GetPostsForTag(c *fiber.Ctx) error {
@@ -328,29 +310,11 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		}
 		var list []models.Post
 		for _, post := range res {
-			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
-				Link:          post.Post.Link.String,
-				UpVotes:       post.UpVotes,
-				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-				PostPictures:  pictures,
-				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.IsUpVote, post.VoteType),
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-			})
+			list = append(list, *postModel)
 		}
 		return list, nil
 	}
@@ -371,29 +335,11 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 	}
 	var list []models.Post
 	for _, post := range res {
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, models.Post{
-			Id:          post.Post.ID,
-			SpaceId:     post.Post.SpaceID.Int64,
-			PosterId:    post.Post.PosterID.Int64,
-			Topic:       post.Post.Topic.String,
-			PosterName:  post.DisplayName,
-			ContentType: models.ContentType(post.Post.ContentType.ContentType),
-			Body:        post.Post.Body.String, Link: post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return list, nil
 }
@@ -401,10 +347,10 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, spaceName string, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForSpaceLatestByName(c.Context(), gen.GetPostsForSpaceLatestByNameParams{
-			Name:     spaceName,
-			ParentID: parentId,
-			Days:     days,
-			UserID:   userId,
+			SpaceName: spaceName,
+			ParentID:  parentId,
+			Days:      days,
+			UserID:    userId,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -415,37 +361,19 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		}
 		var list []models.Post
 		for _, post := range res {
-			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
-				Link:          post.Post.Link.String,
-				UpVotes:       post.UpVotes,
-				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-				PostPictures:  pictures,
-				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.IsUpVote, post.VoteType),
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-			})
+			list = append(list, *postModel)
 		}
 		return list, nil
 	}
 	res, err := queries.GetPostsForSpacePopularByName(c.Context(), gen.GetPostsForSpacePopularByNameParams{
-		Name:     spaceName,
-		ParentID: parentId,
-		UserID:   userId,
-		Days:     days,
+		SpaceName: spaceName,
+		ParentID:  parentId,
+		UserID:    userId,
+		Days:      days,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -456,30 +384,11 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 	}
 	var list []models.Post
 	for _, post := range res {
-
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, models.Post{
-			Id:            post.Post.ID,
-			SpaceId:       post.Post.SpaceID.Int64,
-			PosterId:      post.Post.PosterID.Int64,
-			Topic:         post.Post.Topic.String,
-			PosterName:    post.DisplayName,
-			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-			Body:          post.Post.Body.String,
-			Link:          post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return list, nil
 }
@@ -501,29 +410,11 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 
 	var list []models.Post
 	for _, post := range res {
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return err
 		}
-		list = append(list, models.Post{
-			Id:          post.Post.ID,
-			SpaceId:     post.Post.SpaceID.Int64,
-			PosterId:    post.Post.PosterID.Int64,
-			Topic:       post.Post.Topic.String,
-			PosterName:  post.DisplayName,
-			ContentType: models.ContentType(post.Post.ContentType.ContentType),
-			Body:        post.Post.Body.String, Link: post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return c.JSON(list)
 }
@@ -543,30 +434,11 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 		}
 		var list []models.Post
 		for _, post := range res {
-			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
-				Link:          post.Post.Link.String,
-				UpVotes:       post.UpVotes,
-				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-
-				PostPictures:  pictures,
-				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.IsUpVote, post.VoteType),
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-			})
+			list = append(list, *postModel)
 		}
 		return list, nil
 	}
@@ -583,30 +455,11 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 	}
 	var list []models.Post
 	for _, post := range res {
-
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, models.Post{
-			Id:            post.Post.ID,
-			SpaceId:       post.Post.SpaceID.Int64,
-			PosterId:      post.Post.PosterID.Int64,
-			Topic:         post.Post.Topic.String,
-			PosterName:    post.DisplayName,
-			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-			Body:          post.Post.Body.String,
-			Link:          post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return list, nil
 }
@@ -626,29 +479,11 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 		}
 		var list []models.Post
 		for _, post := range res {
-			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
-				Link:          post.Post.Link.String,
-				UpVotes:       post.UpVotes,
-				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-				PostPictures:  pictures,
-				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.IsUpVote, post.VoteType),
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-			})
+			list = append(list, *postModel)
 		}
 		return list, nil
 	}
@@ -665,30 +500,11 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	}
 	var list []models.Post
 	for _, post := range res {
-
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, models.Post{
-			Id:            post.Post.ID,
-			SpaceId:       post.Post.SpaceID.Int64,
-			PosterId:      post.Post.PosterID.Int64,
-			Topic:         post.Post.Topic.String,
-			PosterName:    post.DisplayName,
-			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-			Body:          post.Post.Body.String,
-			Link:          post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return list, nil
 }
@@ -828,4 +644,30 @@ func getPicturesForPost(postId int64, queries *gen.Queries, c *fiber.Ctx) ([]*mo
 		slice = append(slice, getPictureMetaFromModel(p))
 	}
 	return slice, nil
+}
+
+func getPost(postView gen.PostsView, isUpvote sql.NullBool, voteType gen.NullVoteType, queries *gen.Queries, c *fiber.Ctx) (*models.Post, error) {
+	pictures, err := getPicturesForPost(postView.ID, queries, c)
+	if err != nil {
+		return nil, err
+	}
+	return &models.Post{
+		Id:            postView.ID,
+		SpaceId:       postView.SpaceID.Int64,
+		PosterId:      postView.PosterID.Int64,
+		Topic:         postView.Topic.String,
+		PosterName:    postView.DisplayName,
+		ContentType:   models.ContentType(postView.ContentType.ContentType),
+		Body:          postView.Body.String,
+		Link:          postView.Link.String,
+		UpVotes:       postView.UpVotes,
+		DownVotes:     postView.DownVotes,
+		PosterPicture: getPictureMeta(postView.UserPicUrl, postView.UserPicWidth, postView.UserPicHeight, postView.UserPicID.Int64),
+		SpacePicture:  getPictureMeta(postView.SpaceSmallPicUrl, postView.SpaceSmallPicWidth, postView.SpaceSmallPicHeight, postView.SpaceSmallPicID.Int64),
+		PostPictures:  pictures,
+		Created:       postView.Created.Time,
+		Vote:          getVote(isUpvote, voteType),
+		SpaceParentId: postView.ParentID,
+		SpaceName:     postView.SpaceName,
+	}, nil
 }

@@ -121,28 +121,11 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 	}
 	var list []models.Post
 	for _, post := range res {
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return err
 		}
-		list = append(list, models.Post{
-			Id:          post.Post.ID,
-			SpaceId:     post.Post.SpaceID.Int64,
-			PosterId:    post.Post.PosterID.Int64,
-			Topic:       post.Post.Topic.String,
-			PosterName:  post.DisplayName,
-			ContentType: models.ContentType(post.Post.ContentType.ContentType),
-			Body:        post.Post.Body.String, Link: post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return c.JSON(list)
 }

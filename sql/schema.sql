@@ -257,15 +257,6 @@ ALTER SEQUENCE public.posts_id_seq OWNED BY public.posts.id;
 
 
 --
--- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.schema_migrations (
-    version character varying(128) NOT NULL
-);
-
-
---
 -- Name: spaces; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -279,6 +270,84 @@ CREATE TABLE public.spaces (
     ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(description, ''::text)), 'B'::"char"))) STORED,
     small_picture_id bigint,
     background_picture_id bigint
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    password text NOT NULL,
+    email text NOT NULL,
+    display_name text NOT NULL,
+    bio text,
+    is_deleted boolean DEFAULT false,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    picture_id bigint
+);
+
+
+--
+-- Name: votes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.votes (
+    id bigint NOT NULL,
+    is_up_vote boolean DEFAULT true,
+    user_id bigint NOT NULL,
+    post_or_comment_id bigint NOT NULL,
+    vote_type public.vote_type NOT NULL,
+    is_deleted boolean DEFAULT false
+);
+
+
+--
+-- Name: posts_view; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.posts_view AS
+ SELECT p.id,
+    p.space_id,
+    p.poster_id,
+    p.topic,
+    p.body,
+    p.content_type,
+    p.is_deleted,
+    p.created,
+    p.ts,
+    p.link,
+    u.display_name,
+    user_pic.url AS user_pic_url,
+    user_pic.width AS user_pic_width,
+    user_pic.height AS user_pic_height,
+    user_pic.id AS user_pic_id,
+    space_small_pic.url AS space_small_pic_url,
+    space_small_pic.width AS space_small_pic_width,
+    space_small_pic.height AS space_small_pic_height,
+    space_small_pic.id AS space_small_pic_id,
+    s.parent_id,
+    s.name AS space_name,
+    ( SELECT count(v.id) AS count
+           FROM public.votes v
+          WHERE ((v.post_or_comment_id = p.id) AND (v.is_deleted = false) AND (v.is_up_vote = true) AND (v.vote_type = 'post'::public.vote_type))) AS up_votes,
+    ( SELECT count(v.id) AS count
+           FROM public.votes v
+          WHERE ((v.post_or_comment_id = p.id) AND (v.is_deleted = false) AND (v.is_up_vote = false) AND (v.vote_type = 'post'::public.vote_type))) AS down_votes
+   FROM ((((public.posts p
+     JOIN public.users u ON ((p.poster_id = u.id)))
+     JOIN public.spaces s ON ((s.id = p.space_id)))
+     LEFT JOIN public.pictures user_pic ON ((u.picture_id = user_pic.id)))
+     LEFT JOIN public.pictures space_small_pic ON ((s.small_picture_id = space_small_pic.id)));
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version character varying(128) NOT NULL
 );
 
 
@@ -411,22 +480,6 @@ ALTER SEQUENCE public.tags_relations_id_seq OWNED BY public.tags_relations.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users (
-    id bigint NOT NULL,
-    password text NOT NULL,
-    email text NOT NULL,
-    display_name text NOT NULL,
-    bio text,
-    is_deleted boolean DEFAULT false,
-    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    picture_id bigint
-);
-
-
---
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -443,20 +496,6 @@ CREATE SEQUENCE public.users_id_seq
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: votes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.votes (
-    id bigint NOT NULL,
-    is_up_vote boolean DEFAULT true,
-    user_id bigint NOT NULL,
-    post_or_comment_id bigint NOT NULL,
-    vote_type public.vote_type NOT NULL,
-    is_deleted boolean DEFAULT false
-);
 
 
 --
@@ -873,4 +912,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230727223653'),
     ('20230730211929'),
     ('20230801224840'),
-    ('20230807184711');
+    ('20230807184711'),
+    ('20230813191626');

@@ -11,6 +11,10 @@ type UserBioUpdate struct {
 	Bio string `validate:"required" json:"bio"`
 }
 
+type UserPictureUpdate struct {
+	Id int64 `validate:"required" json:"picture_id"`
+}
+
 type UserMeta struct {
 	UserID      int64        `json:"user_id"`
 	DisplayName string       `json:"display_name"`

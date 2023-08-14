@@ -60,6 +60,7 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 			Width:     res.Width,
 			Height:    res.Height,
 			Id:        res.ID,
+			Url:       req.PictureMeta.Url,
 		})
 	}
 	preSigned, fileName, err := d.getPresigned(c)
@@ -83,6 +84,7 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 			Width:     res.Width,
 			Height:    res.Height,
 			Id:        res.ID,
+			Url:       content,
 		})
 	}
 	return c.SendStatus(fiber.StatusBadRequest)

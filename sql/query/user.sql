@@ -9,6 +9,11 @@ set bio = $1
 where id = $2
 RETURNING *;
 
+-- name: UpdatePicture :exec
+UPDATE users
+SET picture_id = $1
+WHERE id = $2;
+
 -- name: GetUser :one
 SELECT sqlc.embed(u), p.*
 FROM users u

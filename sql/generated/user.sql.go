@@ -116,6 +116,22 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFr
 	return i, err
 }
 
+const updatePicture = `-- name: UpdatePicture :exec
+UPDATE users
+SET picture_id = $1
+WHERE id = $2
+`
+
+type UpdatePictureParams struct {
+	PictureID sql.NullInt64
+	ID        int64
+}
+
+func (q *Queries) UpdatePicture(ctx context.Context, arg UpdatePictureParams) error {
+	_, err := q.db.ExecContext(ctx, updatePicture, arg.PictureID, arg.ID)
+	return err
+}
+
 const updateUserBio = `-- name: UpdateUserBio :exec
 UPDATE users
 set bio = $1

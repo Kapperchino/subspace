@@ -123,6 +123,8 @@ func main() {
 
 	app.Put("/users/:id", userService.UpdateUserBio)
 
+	app.Put("/users/:id/picture", userService.UpdatePicture)
+
 	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 

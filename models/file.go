@@ -12,6 +12,7 @@ type PictureMetaResult struct {
 	Width     int64  `json:"width"`
 	Height    int64  `json:"height"`
 	Id        int64  `json:"id"`
+	Url       string `json:"url"`
 }
 
 type PictureRequestMeta struct {

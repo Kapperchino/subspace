@@ -105,6 +105,25 @@ type Comment struct {
 	ContentType NullContentType
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
+	Link        sql.NullString
+}
+
+type CommentsView struct {
+	ID            int64
+	PostID        int64
+	PosterID      int64
+	ParentID      sql.NullInt64
+	Body          string
+	ContentType   NullContentType
+	IsDeleted     sql.NullBool
+	Created       sql.NullTime
+	UserPicUrl    sql.NullString
+	UserPicWidth  sql.NullInt64
+	UserPicHeight sql.NullInt64
+	UserPicID     sql.NullInt64
+	DisplayName   string
+	UpVotes       int64
+	DownVotes     int64
 }
 
 type Device struct {

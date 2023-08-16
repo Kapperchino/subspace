@@ -72,7 +72,8 @@ CREATE TABLE public.comments (
     body text NOT NULL,
     content_type public.content_type DEFAULT 'text'::public.content_type,
     is_deleted boolean DEFAULT false,
-    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    link text
 );
 
 
@@ -93,6 +94,77 @@ CREATE SEQUENCE public.comments_id_seq
 --
 
 ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
+
+
+--
+-- Name: pictures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pictures (
+    id bigint NOT NULL,
+    url text NOT NULL,
+    width bigint NOT NULL,
+    height bigint NOT NULL
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    password text NOT NULL,
+    email text NOT NULL,
+    display_name text NOT NULL,
+    bio text,
+    is_deleted boolean DEFAULT false,
+    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    picture_id bigint
+);
+
+
+--
+-- Name: votes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.votes (
+    id bigint NOT NULL,
+    is_up_vote boolean DEFAULT true,
+    user_id bigint NOT NULL,
+    post_or_comment_id bigint NOT NULL,
+    vote_type public.vote_type NOT NULL,
+    is_deleted boolean DEFAULT false
+);
+
+
+--
+-- Name: comments_view; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.comments_view AS
+ SELECT c.id,
+    c.post_id,
+    c.poster_id,
+    c.parent_id,
+    c.body,
+    c.content_type,
+    c.is_deleted,
+    c.created,
+    user_pic.url AS user_pic_url,
+    user_pic.width AS user_pic_width,
+    user_pic.height AS user_pic_height,
+    user_pic.id AS user_pic_id,
+    u.display_name,
+    ( SELECT count(v.id) AS count
+           FROM public.votes v
+          WHERE ((v.post_or_comment_id = c.id) AND (v.is_deleted = false) AND (v.is_up_vote = true) AND (v.vote_type = 'comment'::public.vote_type))) AS up_votes,
+    ( SELECT count(v.id) AS count
+           FROM public.votes v
+          WHERE ((v.post_or_comment_id = c.id) AND (v.is_deleted = false) AND (v.is_up_vote = false) AND (v.vote_type = 'comment'::public.vote_type))) AS down_votes
+   FROM ((public.comments c
+     JOIN public.users u ON ((c.poster_id = u.id)))
+     LEFT JOIN public.pictures user_pic ON ((u.picture_id = user_pic.id)));
 
 
 --
@@ -189,18 +261,6 @@ ALTER SEQUENCE public.picture_releations_id_seq OWNED BY public.picture_releatio
 
 
 --
--- Name: pictures; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.pictures (
-    id bigint NOT NULL,
-    url text NOT NULL,
-    width bigint NOT NULL,
-    height bigint NOT NULL
-);
-
-
---
 -- Name: pictures_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -270,36 +330,6 @@ CREATE TABLE public.spaces (
     ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(description, ''::text)), 'B'::"char"))) STORED,
     small_picture_id bigint,
     background_picture_id bigint
-);
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users (
-    id bigint NOT NULL,
-    password text NOT NULL,
-    email text NOT NULL,
-    display_name text NOT NULL,
-    bio text,
-    is_deleted boolean DEFAULT false,
-    created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    picture_id bigint
-);
-
-
---
--- Name: votes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.votes (
-    id bigint NOT NULL,
-    is_up_vote boolean DEFAULT true,
-    user_id bigint NOT NULL,
-    post_or_comment_id bigint NOT NULL,
-    vote_type public.vote_type NOT NULL,
-    is_deleted boolean DEFAULT false
 );
 
 
@@ -913,4 +943,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230730211929'),
     ('20230801224840'),
     ('20230807184711'),
-    ('20230813191626');
+    ('20230813191626'),
+    ('20230814193310');

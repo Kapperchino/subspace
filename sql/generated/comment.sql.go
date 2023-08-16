@@ -13,7 +13,7 @@ import (
 const createComment = `-- name: CreateComment :one
 INSERT INTO comments (parent_id, post_id, poster_id, body, content_type)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, post_id, poster_id, parent_id, body, content_type, is_deleted, created
+RETURNING id, post_id, poster_id, parent_id, body, content_type, is_deleted, created, link
 `
 
 type CreateCommentParams struct {
@@ -42,52 +42,40 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (C
 		&i.ContentType,
 		&i.IsDeleted,
 		&i.Created,
+		&i.Link,
 	)
 	return i, err
 }
 
 const getComment = `-- name: GetComment :one
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       u.display_name,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = true
-          AND v.vote_type = 'comment') AS up_votes,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = false
-          AND v.vote_type = 'comment') AS down_votes
-FROM comments c
-         join users u on c.poster_id = u.id
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.user_pic_url, c.user_pic_width, c.user_pic_height, c.user_pic_id, c.display_name, c.up_votes, c.down_votes
+FROM comments_view c
 where c.id = $1
 `
 
 type GetCommentRow struct {
-	Comment     Comment
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+	CommentsView CommentsView
 }
 
 func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, error) {
 	row := q.db.QueryRowContext(ctx, getComment, id)
 	var i GetCommentRow
 	err := row.Scan(
-		&i.Comment.ID,
-		&i.Comment.PostID,
-		&i.Comment.PosterID,
-		&i.Comment.ParentID,
-		&i.Comment.Body,
-		&i.Comment.ContentType,
-		&i.Comment.IsDeleted,
-		&i.Comment.Created,
-		&i.DisplayName,
-		&i.UpVotes,
-		&i.DownVotes,
+		&i.CommentsView.ID,
+		&i.CommentsView.PostID,
+		&i.CommentsView.PosterID,
+		&i.CommentsView.ParentID,
+		&i.CommentsView.Body,
+		&i.CommentsView.ContentType,
+		&i.CommentsView.IsDeleted,
+		&i.CommentsView.Created,
+		&i.CommentsView.UserPicUrl,
+		&i.CommentsView.UserPicWidth,
+		&i.CommentsView.UserPicHeight,
+		&i.CommentsView.UserPicID,
+		&i.CommentsView.DisplayName,
+		&i.CommentsView.UpVotes,
+		&i.CommentsView.DownVotes,
 	)
 	return i, err
 }
@@ -116,54 +104,23 @@ func (q *Queries) GetCommenter(ctx context.Context, id int64) (User, error) {
 }
 
 const getCommentsForComment = `-- name: GetCommentsForComment :many
-WITH RECURSIVE allCommentsForComment AS (
-    -- base case starting from grandfather
-    SELECT id,
-           post_id,
-           poster_id,
-           parent_id,
-           body,
-           content_type,
-           is_deleted,
-           created,
-           0 AS level
-    FROM comments c
-    WHERE c.id = $1
-      AND c.id != 1
-    UNION
-    --- recursive query (note it adds to the partial table "x")
-    SELECT c.id,
-           c.post_id,
-           c.poster_id,
-           c.parent_id,
-           c.body,
-           c.content_type,
-           c.is_deleted,
-           c.created,
-           c1.level + 1
-    FROM comments c
-             INNER JOIN allCommentsForComment c1
-                        ON c.parent_id = c1.id
-    WHERE c1.level < 3)
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       u.display_name,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = true
-          AND v.vote_type = 'comment') AS up_votes,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = false
-          AND v.vote_type = 'comment') AS down_votes
-FROM allCommentsForComment c
-         join users u on c.poster_id = u.id
-         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
+WITH RECURSIVE allCommentsForComment AS (SELECT c.id,
+                                                0 AS level
+                                         FROM comments c
+                                         WHERE c.id = $1
+                                           AND c.id != 1
+                                         UNION
+                                         SELECT c.id,
+                                                c1.level + 1
+                                         FROM comments c
+                                                  INNER JOIN allCommentsForComment c1
+                                                             ON c.parent_id = c1.id
+                                         WHERE c1.level < 3)
+SELECT cv.id, cv.post_id, cv.poster_id, cv.parent_id, cv.body, cv.content_type, cv.is_deleted, cv.created, cv.user_pic_url, cv.user_pic_width, cv.user_pic_height, cv.user_pic_id, cv.display_name, cv.up_votes, cv.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+from comments_view cv
+         left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
+where cv.id IN (allCommentsForComment)
 `
 
 type GetCommentsForCommentParams struct {
@@ -172,24 +129,13 @@ type GetCommentsForCommentParams struct {
 }
 
 type GetCommentsForCommentRow struct {
-	ID              int64
-	PostID          int64
-	PosterID        int64
-	ParentID        sql.NullInt64
-	Body            string
-	ContentType     NullContentType
-	IsDeleted       sql.NullBool
-	Created         sql.NullTime
-	Level           int32
-	ID_2            sql.NullInt64
+	CommentsView    CommentsView
+	ID              sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
 	VoteType        NullVoteType
-	IsDeleted_2     sql.NullBool
-	DisplayName     string
-	UpVotes         int64
-	DownVotes       int64
+	IsDeleted       sql.NullBool
 }
 
 func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForCommentParams) ([]GetCommentsForCommentRow, error) {
@@ -202,24 +148,27 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 	for rows.Next() {
 		var i GetCommentsForCommentRow
 		if err := rows.Scan(
+			&i.CommentsView.ID,
+			&i.CommentsView.PostID,
+			&i.CommentsView.PosterID,
+			&i.CommentsView.ParentID,
+			&i.CommentsView.Body,
+			&i.CommentsView.ContentType,
+			&i.CommentsView.IsDeleted,
+			&i.CommentsView.Created,
+			&i.CommentsView.UserPicUrl,
+			&i.CommentsView.UserPicWidth,
+			&i.CommentsView.UserPicHeight,
+			&i.CommentsView.UserPicID,
+			&i.CommentsView.DisplayName,
+			&i.CommentsView.UpVotes,
+			&i.CommentsView.DownVotes,
 			&i.ID,
-			&i.PostID,
-			&i.PosterID,
-			&i.ParentID,
-			&i.Body,
-			&i.ContentType,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Level,
-			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
 			&i.VoteType,
-			&i.IsDeleted_2,
-			&i.DisplayName,
-			&i.UpVotes,
-			&i.DownVotes,
+			&i.IsDeleted,
 		); err != nil {
 			return nil, err
 		}
@@ -235,53 +184,21 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 }
 
 const getCommentsForPost = `-- name: GetCommentsForPost :many
-WITH RECURSIVE allCommentsForPost AS (
-    -- base case starting from grandfather
-    SELECT id,
-           post_id,
-           poster_id,
-           parent_id,
-           body,
-           content_type,
-           is_deleted,
-           created,
-           0 AS level
-    FROM comments c
-    WHERE c.post_id = $1
-    UNION
-    --- recursive query (note it adds to the partial table "x")
-    SELECT c.id,
-           c.post_id,
-           c.poster_id,
-           c.parent_id,
-           c.body,
-           c.content_type,
-           c.is_deleted,
-           c.created,
-           c1.level + 1
-    FROM comments c
-             INNER JOIN allCommentsForPost c1
-                        ON c.parent_id = c1.id
-    WHERE c1.level < 3)
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.level,
-       v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted,
-       u.display_name,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = true
-          AND v.vote_type = 'comment') AS up_votes,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = false
-          AND v.vote_type = 'comment') AS down_votes
-FROM allCommentsForPost c
-         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
+WITH RECURSIVE allCommentsForPost AS (SELECT c.id, 0 AS level
+                                      FROM comments c
+                                      WHERE c.post_id = $1
+                                      UNION
+                                      SELECT c.id,
+                                             c1.level + 1
+                                      FROM comments c
+                                               INNER JOIN allCommentsForPost c1
+                                                          ON c.parent_id = c1.id
+                                      WHERE c1.level < 3)
+SELECT cv.id, cv.post_id, cv.poster_id, cv.parent_id, cv.body, cv.content_type, cv.is_deleted, cv.created, cv.user_pic_url, cv.user_pic_width, cv.user_pic_height, cv.user_pic_id, cv.display_name, cv.up_votes, cv.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+from comments_view cv
+         left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-         join users u on c.poster_id = u.id
+where cv.id IN (SELECT id from allCommentsForPost)
 `
 
 type GetCommentsForPostParams struct {
@@ -290,24 +207,13 @@ type GetCommentsForPostParams struct {
 }
 
 type GetCommentsForPostRow struct {
-	ID              int64
-	PostID          int64
-	PosterID        int64
-	ParentID        sql.NullInt64
-	Body            string
-	ContentType     NullContentType
-	IsDeleted       sql.NullBool
-	Created         sql.NullTime
-	Level           int32
-	ID_2            sql.NullInt64
+	CommentsView    CommentsView
+	ID              sql.NullInt64
 	IsUpVote        sql.NullBool
 	UserID          sql.NullInt64
 	PostOrCommentID sql.NullInt64
 	VoteType        NullVoteType
-	IsDeleted_2     sql.NullBool
-	DisplayName     string
-	UpVotes         int64
-	DownVotes       int64
+	IsDeleted       sql.NullBool
 }
 
 func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPostParams) ([]GetCommentsForPostRow, error) {
@@ -320,24 +226,27 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 	for rows.Next() {
 		var i GetCommentsForPostRow
 		if err := rows.Scan(
+			&i.CommentsView.ID,
+			&i.CommentsView.PostID,
+			&i.CommentsView.PosterID,
+			&i.CommentsView.ParentID,
+			&i.CommentsView.Body,
+			&i.CommentsView.ContentType,
+			&i.CommentsView.IsDeleted,
+			&i.CommentsView.Created,
+			&i.CommentsView.UserPicUrl,
+			&i.CommentsView.UserPicWidth,
+			&i.CommentsView.UserPicHeight,
+			&i.CommentsView.UserPicID,
+			&i.CommentsView.DisplayName,
+			&i.CommentsView.UpVotes,
+			&i.CommentsView.DownVotes,
 			&i.ID,
-			&i.PostID,
-			&i.PosterID,
-			&i.ParentID,
-			&i.Body,
-			&i.ContentType,
-			&i.IsDeleted,
-			&i.Created,
-			&i.Level,
-			&i.ID_2,
 			&i.IsUpVote,
 			&i.UserID,
 			&i.PostOrCommentID,
 			&i.VoteType,
-			&i.IsDeleted_2,
-			&i.DisplayName,
-			&i.UpVotes,
-			&i.DownVotes,
+			&i.IsDeleted,
 		); err != nil {
 			return nil, err
 		}
@@ -353,34 +262,24 @@ func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPost
 }
 
 const getCommentsForUser = `-- name: GetCommentsForUser :many
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created,
-       u.display_name,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = true
-          AND v.vote_type = 'comment') AS up_votes,
-       (SELECT COUNT(id)
-        FROM votes v
-        WHERE v.post_or_comment_id = c.id
-          AND v.is_deleted = false
-          AND v.is_up_vote = false
-          AND v.vote_type = 'comment') AS down_votes
-FROM comments c
-         join users u on c.poster_id = u.id
-where u.id = $1
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.user_pic_url, c.user_pic_width, c.user_pic_height, c.user_pic_id, c.display_name, c.up_votes, c.down_votes
+FROM comments_view c
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
+where c.poster_id = $1
 `
 
-type GetCommentsForUserRow struct {
-	Comment     Comment
-	DisplayName string
-	UpVotes     int64
-	DownVotes   int64
+type GetCommentsForUserParams struct {
+	PosterID int64
+	UserID   int64
 }
 
-func (q *Queries) GetCommentsForUser(ctx context.Context, id int64) ([]GetCommentsForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCommentsForUser, id)
+type GetCommentsForUserRow struct {
+	CommentsView CommentsView
+}
+
+func (q *Queries) GetCommentsForUser(ctx context.Context, arg GetCommentsForUserParams) ([]GetCommentsForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForUser, arg.PosterID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -389,17 +288,21 @@ func (q *Queries) GetCommentsForUser(ctx context.Context, id int64) ([]GetCommen
 	for rows.Next() {
 		var i GetCommentsForUserRow
 		if err := rows.Scan(
-			&i.Comment.ID,
-			&i.Comment.PostID,
-			&i.Comment.PosterID,
-			&i.Comment.ParentID,
-			&i.Comment.Body,
-			&i.Comment.ContentType,
-			&i.Comment.IsDeleted,
-			&i.Comment.Created,
-			&i.DisplayName,
-			&i.UpVotes,
-			&i.DownVotes,
+			&i.CommentsView.ID,
+			&i.CommentsView.PostID,
+			&i.CommentsView.PosterID,
+			&i.CommentsView.ParentID,
+			&i.CommentsView.Body,
+			&i.CommentsView.ContentType,
+			&i.CommentsView.IsDeleted,
+			&i.CommentsView.Created,
+			&i.CommentsView.UserPicUrl,
+			&i.CommentsView.UserPicWidth,
+			&i.CommentsView.UserPicHeight,
+			&i.CommentsView.UserPicID,
+			&i.CommentsView.DisplayName,
+			&i.CommentsView.UpVotes,
+			&i.CommentsView.DownVotes,
 		); err != nil {
 			return nil, err
 		}

@@ -92,16 +92,7 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 
-	return c.JSON(models.Comment{
-		Id:          res.Comment.ID,
-		PosterId:    res.Comment.PosterID,
-		Body:        res.Comment.Body,
-		ParentId:    res.Comment.ParentID.Int64,
-		ContentType: models.ContentType(res.Comment.ContentType.ContentType),
-		UpVotes:     res.UpVotes,
-		DownVotes:   res.DownVotes,
-		Created:     res.Comment.Created.Time,
-	})
+	return c.JSON(getCommentNoVote(res.CommentsView))
 }
 
 func (u *CommentService) GetComments(c *fiber.Ctx) error {
@@ -132,19 +123,8 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		}
 		var list []models.Comment
 		for _, comment := range res {
-			list = append(list, models.Comment{
-				Id:          comment.ID,
-				PosterId:    comment.PosterID,
-				PostId:      comment.PostID,
-				ParentId:    comment.ParentID.Int64,
-				PosterName:  comment.DisplayName,
-				Body:        comment.Body,
-				ContentType: models.ContentType(comment.ContentType.ContentType),
-				UpVotes:     comment.UpVotes,
-				DownVotes:   comment.DownVotes,
-				Created:     comment.Created.Time,
-				Vote:        getVote(comment.IsUpVote, comment.VoteType),
-			})
+
+			list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
 		}
 		return c.JSON(list)
 	}
@@ -161,19 +141,40 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	var list []models.Comment
 	for _, comment := range res {
-		list = append(list, models.Comment{
-			Id:          comment.ID,
-			PosterId:    comment.PosterID,
-			PostId:      comment.PostID,
-			ParentId:    comment.ParentID.Int64,
-			PosterName:  comment.DisplayName,
-			Body:        comment.Body,
-			ContentType: models.ContentType(comment.ContentType.ContentType),
-			UpVotes:     comment.UpVotes,
-			DownVotes:   comment.DownVotes,
-			Created:     comment.Created.Time,
-			Vote:        getVote(comment.IsUpVote, comment.VoteType),
-		})
+		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
 	}
 	return c.JSON(list)
+}
+
+func getComment(view gen.CommentsView, isUpVote sql.NullBool, voteType gen.NullVoteType) models.Comment {
+	return models.Comment{
+		Id:            view.ID,
+		PosterId:      view.PosterID,
+		PostId:        view.PostID,
+		ParentId:      view.ParentID.Int64,
+		PosterName:    view.DisplayName,
+		Body:          view.Body,
+		ContentType:   models.ContentType(view.ContentType.ContentType),
+		UpVotes:       view.UpVotes,
+		DownVotes:     view.DownVotes,
+		Created:       view.Created.Time,
+		PosterPicture: getPictureMeta(view.UserPicUrl, view.UserPicWidth, view.UserPicHeight, view.UserPicID.Int64),
+		Vote:          getVote(isUpVote, voteType),
+	}
+}
+
+func getCommentNoVote(view gen.CommentsView) models.Comment {
+	return models.Comment{
+		Id:            view.ID,
+		PosterId:      view.PosterID,
+		PostId:        view.PostID,
+		ParentId:      view.ParentID.Int64,
+		PosterName:    view.DisplayName,
+		Body:          view.Body,
+		ContentType:   models.ContentType(view.ContentType.ContentType),
+		UpVotes:       view.UpVotes,
+		DownVotes:     view.DownVotes,
+		Created:       view.Created.Time,
+		PosterPicture: getPictureMeta(view.UserPicUrl, view.UserPicWidth, view.UserPicHeight, view.UserPicID.Int64),
+	}
 }

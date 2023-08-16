@@ -120,7 +120,9 @@ CREATE TABLE public.users (
     bio text,
     is_deleted boolean DEFAULT false,
     created timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    picture_id bigint
+    picture_id bigint,
+    address text,
+    ts tsvector GENERATED ALWAYS AS ((setweight(to_tsvector('english'::regconfig, COALESCE(display_name, ''::text)), 'A'::"char") || setweight(to_tsvector('english'::regconfig, COALESCE(address, ''::text)), 'B'::"char"))) STORED
 );
 
 
@@ -944,4 +946,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230801224840'),
     ('20230807184711'),
     ('20230813191626'),
-    ('20230814193310');
+    ('20230814193310'),
+    ('20230816221347');

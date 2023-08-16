@@ -177,6 +177,8 @@ func main() {
 
 	app.Get("/search/posts/", searchService.SearchPosts)
 
+	app.Get("/search/users/", userService.SearchUsers)
+
 	//device
 	app.Put("/devices", deviceService.UpdateRegistration)
 

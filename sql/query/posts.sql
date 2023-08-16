@@ -3,7 +3,7 @@ INSERT INTO posts (space_id, poster_id, topic, body, content_type, link)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
--- name: SearchPost :many
+-- name: SearchPostPopular :many
 SELECT sqlc.embed(p), v.*
 from posts_view p
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
@@ -12,6 +12,16 @@ WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC;
+
+-- name: SearchPostLatest :many
+SELECT sqlc.embed(p), v.*
+from posts_view p
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
+WHERE p.id != 1
+  AND current_timestamp - p.created
+    < make_interval(days => $2)
+ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, p.created DESC;
 
 -- name: GetPost :one
 SELECT sqlc.embed(p), v.*
@@ -85,14 +95,27 @@ WHERE p.id != 1
     < make_interval(days => $2)
 ORDER BY up_votes DESC;
 
--- name: GetPostsForUser :many
+-- name: GetPostsForUserLatest :many
 SELECT sqlc.embed(p), v.*
 from posts_view p
          left join votes v
                    on v.user_id = $1 and p.id = v.post_or_comment_id and
                       v.vote_type = 'post'
 WHERE p.poster_id = $1
-  AND p.id != 1;
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY p.created DESC;
+
+-- name: GetPostsForUserPopular :many
+SELECT sqlc.embed(p), v.*
+from posts_view p
+         left join votes v
+                   on v.user_id = $1 and p.id = v.post_or_comment_id and
+                      v.vote_type = 'post'
+WHERE p.poster_id = $1
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY up_votes DESC;
 
 -- name: GetPostsForUserSubscriptionLatest :many
 SELECT sqlc.embed(p), v.*

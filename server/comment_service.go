@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -85,7 +86,7 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	res, err := queries.GetComment(c.Context(), int64(id))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -99,6 +100,8 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	postId := c.QueryInt("postId", -1)
 	commentId := c.QueryInt("commentId", -1)
 	userId := c.QueryInt("userId", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
 	if userId == -1 {
 		return c.Status(fiber.StatusBadRequest).
 			SendString("userId is required")
@@ -110,23 +113,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 	if postId != -1 {
-		res, err := queries.GetCommentsForPost(c.Context(), gen.GetCommentsForPostParams{
-			PostID: int64(postId),
-			UserID: int64(userId),
-		})
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.SendStatus(fiber.StatusOK)
-			}
-			log.Error().Err(err).Msg("Error while creating using in db")
-			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
-		}
-		var list []models.Comment
-		for _, comment := range res {
-
-			list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
-		}
-		return c.JSON(list)
+		return getCommentsForPost(postId, sort, days, userId, queries, c)
 	}
 	res, err := queries.GetCommentsForComment(c.Context(), gen.GetCommentsForCommentParams{
 		ID:     int64(commentId),
@@ -134,6 +121,45 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
+			return c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Comment
+	for _, comment := range res {
+		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
+	}
+	return c.JSON(list)
+}
+
+func getCommentsForPost(postId int, sort string, days int, userId int, queries *gen.Queries, c *fiber.Ctx) error {
+	if sort == "popular" {
+		res, err := queries.GetCommentsForPostPopular(c.Context(), gen.GetCommentsForPostPopularParams{
+			PostID: int64(postId),
+			UserID: int64(userId),
+			Days:   int32(days),
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Comment
+		for _, comment := range res {
+			list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
+		}
+		return c.JSON(list)
+	}
+	res, err := queries.GetCommentsForPostLatest(c.Context(), gen.GetCommentsForPostLatestParams{
+		PostID: int64(postId),
+		UserID: int64(userId),
+		Days:   int32(days),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

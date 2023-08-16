@@ -232,6 +232,8 @@ type User struct {
 	IsDeleted   sql.NullBool
 	Created     sql.NullTime
 	PictureID   sql.NullInt64
+	Address     sql.NullString
+	Ts          interface{}
 }
 
 type Vote struct {

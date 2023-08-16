@@ -112,7 +112,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (GetPostRow, e
 }
 
 const getPoster = `-- name: GetPoster :one
-SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts
 from posts p
          join users u on p.poster_id = u.id
 where p.id = $1
@@ -130,6 +130,8 @@ func (q *Queries) GetPoster(ctx context.Context, id int64) (User, error) {
 		&i.IsDeleted,
 		&i.Created,
 		&i.PictureID,
+		&i.Address,
+		&i.Ts,
 	)
 	return i, err
 }
@@ -628,7 +630,7 @@ func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPost
 	return items, nil
 }
 
-const getPostsForUser = `-- name: GetPostsForUser :many
+const getPostsForUserLatest = `-- name: GetPostsForUserLatest :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 from posts_view p
          left join votes v
@@ -636,9 +638,16 @@ from posts_view p
                       v.vote_type = 'post'
 WHERE p.poster_id = $1
   AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY p.created DESC
 `
 
-type GetPostsForUserRow struct {
+type GetPostsForUserLatestParams struct {
+	UserID int64
+	Days   int32
+}
+
+type GetPostsForUserLatestRow struct {
 	PostsView       PostsView
 	ID              sql.NullInt64
 	IsUpVote        sql.NullBool
@@ -648,15 +657,95 @@ type GetPostsForUserRow struct {
 	IsDeleted       sql.NullBool
 }
 
-func (q *Queries) GetPostsForUser(ctx context.Context, userID int64) ([]GetPostsForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUser, userID)
+func (q *Queries) GetPostsForUserLatest(ctx context.Context, arg GetPostsForUserLatestParams) ([]GetPostsForUserLatestRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForUserLatest, arg.UserID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPostsForUserRow
+	var items []GetPostsForUserLatestRow
 	for rows.Next() {
-		var i GetPostsForUserRow
+		var i GetPostsForUserLatestRow
+		if err := rows.Scan(
+			&i.PostsView.ID,
+			&i.PostsView.SpaceID,
+			&i.PostsView.PosterID,
+			&i.PostsView.Topic,
+			&i.PostsView.Body,
+			&i.PostsView.ContentType,
+			&i.PostsView.IsDeleted,
+			&i.PostsView.Created,
+			&i.PostsView.Ts,
+			&i.PostsView.Link,
+			&i.PostsView.DisplayName,
+			&i.PostsView.UserPicUrl,
+			&i.PostsView.UserPicWidth,
+			&i.PostsView.UserPicHeight,
+			&i.PostsView.UserPicID,
+			&i.PostsView.SpaceSmallPicUrl,
+			&i.PostsView.SpaceSmallPicWidth,
+			&i.PostsView.SpaceSmallPicHeight,
+			&i.PostsView.SpaceSmallPicID,
+			&i.PostsView.ParentID,
+			&i.PostsView.SpaceName,
+			&i.PostsView.UpVotes,
+			&i.PostsView.DownVotes,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsForUserPopular = `-- name: GetPostsForUserPopular :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+from posts_view p
+         left join votes v
+                   on v.user_id = $1 and p.id = v.post_or_comment_id and
+                      v.vote_type = 'post'
+WHERE p.poster_id = $1
+  AND p.id != 1
+  AND current_timestamp - p.created < make_interval(days => $2)
+ORDER BY up_votes DESC
+`
+
+type GetPostsForUserPopularParams struct {
+	UserID int64
+	Days   int32
+}
+
+type GetPostsForUserPopularRow struct {
+	PostsView       PostsView
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) GetPostsForUserPopular(ctx context.Context, arg GetPostsForUserPopularParams) ([]GetPostsForUserPopularRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsForUserPopular, arg.UserID, arg.Days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsForUserPopularRow
+	for rows.Next() {
+		var i GetPostsForUserPopularRow
 		if err := rows.Scan(
 			&i.PostsView.ID,
 			&i.PostsView.SpaceID,
@@ -863,7 +952,87 @@ func (q *Queries) GetPostsForUserSubscriptionPopular(ctx context.Context, arg Ge
 	return items, nil
 }
 
-const searchPost = `-- name: SearchPost :many
+const searchPostLatest = `-- name: SearchPostLatest :many
+SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+from posts_view p
+         left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
+                              v.vote_type = 'post'
+WHERE p.id != 1
+  AND current_timestamp - p.created
+    < make_interval(days => $2)
+ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, p.created DESC
+`
+
+type SearchPostLatestParams struct {
+	UserID         int64
+	Days           int32
+	PlaintoTsquery string
+}
+
+type SearchPostLatestRow struct {
+	PostsView       PostsView
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) SearchPostLatest(ctx context.Context, arg SearchPostLatestParams) ([]SearchPostLatestRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPostLatest, arg.UserID, arg.Days, arg.PlaintoTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchPostLatestRow
+	for rows.Next() {
+		var i SearchPostLatestRow
+		if err := rows.Scan(
+			&i.PostsView.ID,
+			&i.PostsView.SpaceID,
+			&i.PostsView.PosterID,
+			&i.PostsView.Topic,
+			&i.PostsView.Body,
+			&i.PostsView.ContentType,
+			&i.PostsView.IsDeleted,
+			&i.PostsView.Created,
+			&i.PostsView.Ts,
+			&i.PostsView.Link,
+			&i.PostsView.DisplayName,
+			&i.PostsView.UserPicUrl,
+			&i.PostsView.UserPicWidth,
+			&i.PostsView.UserPicHeight,
+			&i.PostsView.UserPicID,
+			&i.PostsView.SpaceSmallPicUrl,
+			&i.PostsView.SpaceSmallPicWidth,
+			&i.PostsView.SpaceSmallPicHeight,
+			&i.PostsView.SpaceSmallPicID,
+			&i.PostsView.ParentID,
+			&i.PostsView.SpaceName,
+			&i.PostsView.UpVotes,
+			&i.PostsView.DownVotes,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchPostPopular = `-- name: SearchPostPopular :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 from posts_view p
          left join votes v on v.user_id = $1 and p.id = v.post_or_comment_id and
@@ -874,13 +1043,13 @@ WHERE p.id != 1
 ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC
 `
 
-type SearchPostParams struct {
+type SearchPostPopularParams struct {
 	UserID         int64
 	Days           int32
 	PlaintoTsquery string
 }
 
-type SearchPostRow struct {
+type SearchPostPopularRow struct {
 	PostsView       PostsView
 	ID              sql.NullInt64
 	IsUpVote        sql.NullBool
@@ -890,15 +1059,15 @@ type SearchPostRow struct {
 	IsDeleted       sql.NullBool
 }
 
-func (q *Queries) SearchPost(ctx context.Context, arg SearchPostParams) ([]SearchPostRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchPost, arg.UserID, arg.Days, arg.PlaintoTsquery)
+func (q *Queries) SearchPostPopular(ctx context.Context, arg SearchPostPopularParams) ([]SearchPostPopularRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPostPopular, arg.UserID, arg.Days, arg.PlaintoTsquery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchPostRow
+	var items []SearchPostPopularRow
 	for rows.Next() {
-		var i SearchPostRow
+		var i SearchPostPopularRow
 		if err := rows.Scan(
 			&i.PostsView.ID,
 			&i.PostsView.SpaceID,

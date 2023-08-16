@@ -27,3 +27,11 @@ FROM users u
          left join pictures p on u.picture_id = p.id
 WHERE u.email = $1
 LIMIT 1;
+
+-- name: SearchUsers :many
+SELECT sqlc.embed(u), p.*
+from users u
+         left join pictures p on u.picture_id = p.id
+where u.is_deleted = false
+ORDER BY ts_rank(u.ts, plainto_tsquery('english', $1)) DESC
+LIMIT 100;

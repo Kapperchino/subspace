@@ -81,7 +81,7 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 }
 
 const getCommenter = `-- name: GetCommenter :one
-SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts
 from comments c
          join users u on c.poster_id = u.id
 where c.id = $1
@@ -99,6 +99,8 @@ func (q *Queries) GetCommenter(ctx context.Context, id int64) (User, error) {
 		&i.IsDeleted,
 		&i.Created,
 		&i.PictureID,
+		&i.Address,
+		&i.Ts,
 	)
 	return i, err
 }
@@ -183,7 +185,7 @@ func (q *Queries) GetCommentsForComment(ctx context.Context, arg GetCommentsForC
 	return items, nil
 }
 
-const getCommentsForPost = `-- name: GetCommentsForPost :many
+const getCommentsForPostLatest = `-- name: GetCommentsForPostLatest :many
 WITH RECURSIVE allCommentsForPost AS (SELECT c.id, 0 AS level
                                       FROM comments c
                                       WHERE c.post_id = $1
@@ -199,14 +201,17 @@ from comments_view cv
          left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
 where cv.id IN (SELECT id from allCommentsForPost)
+  AND current_timestamp - cv.created < make_interval(days => $3)
+ORDER BY cv.created DESC
 `
 
-type GetCommentsForPostParams struct {
+type GetCommentsForPostLatestParams struct {
 	PostID int64
 	UserID int64
+	Days   int32
 }
 
-type GetCommentsForPostRow struct {
+type GetCommentsForPostLatestRow struct {
 	CommentsView    CommentsView
 	ID              sql.NullInt64
 	IsUpVote        sql.NullBool
@@ -216,15 +221,96 @@ type GetCommentsForPostRow struct {
 	IsDeleted       sql.NullBool
 }
 
-func (q *Queries) GetCommentsForPost(ctx context.Context, arg GetCommentsForPostParams) ([]GetCommentsForPostRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCommentsForPost, arg.PostID, arg.UserID)
+func (q *Queries) GetCommentsForPostLatest(ctx context.Context, arg GetCommentsForPostLatestParams) ([]GetCommentsForPostLatestRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForPostLatest, arg.PostID, arg.UserID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetCommentsForPostRow
+	var items []GetCommentsForPostLatestRow
 	for rows.Next() {
-		var i GetCommentsForPostRow
+		var i GetCommentsForPostLatestRow
+		if err := rows.Scan(
+			&i.CommentsView.ID,
+			&i.CommentsView.PostID,
+			&i.CommentsView.PosterID,
+			&i.CommentsView.ParentID,
+			&i.CommentsView.Body,
+			&i.CommentsView.ContentType,
+			&i.CommentsView.IsDeleted,
+			&i.CommentsView.Created,
+			&i.CommentsView.UserPicUrl,
+			&i.CommentsView.UserPicWidth,
+			&i.CommentsView.UserPicHeight,
+			&i.CommentsView.UserPicID,
+			&i.CommentsView.DisplayName,
+			&i.CommentsView.UpVotes,
+			&i.CommentsView.DownVotes,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCommentsForPostPopular = `-- name: GetCommentsForPostPopular :many
+WITH RECURSIVE allCommentsForPost AS (SELECT c.id, 0 AS level
+                                      FROM comments c
+                                      WHERE c.post_id = $1
+                                      UNION
+                                      SELECT c.id,
+                                             c1.level + 1
+                                      FROM comments c
+                                               INNER JOIN allCommentsForPost c1
+                                                          ON c.parent_id = c1.id
+                                      WHERE c1.level < 3)
+SELECT cv.id, cv.post_id, cv.poster_id, cv.parent_id, cv.body, cv.content_type, cv.is_deleted, cv.created, cv.user_pic_url, cv.user_pic_width, cv.user_pic_height, cv.user_pic_id, cv.display_name, cv.up_votes, cv.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+from comments_view cv
+         left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
+where cv.id IN (SELECT id from allCommentsForPost)
+  AND current_timestamp - cv.created < make_interval(days => $3)
+ORDER BY up_votes DESC
+`
+
+type GetCommentsForPostPopularParams struct {
+	PostID int64
+	UserID int64
+	Days   int32
+}
+
+type GetCommentsForPostPopularRow struct {
+	CommentsView    CommentsView
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) GetCommentsForPostPopular(ctx context.Context, arg GetCommentsForPostPopularParams) ([]GetCommentsForPostPopularRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForPostPopular, arg.PostID, arg.UserID, arg.Days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommentsForPostPopularRow
+	for rows.Next() {
+		var i GetCommentsForPostPopularRow
 		if err := rows.Scan(
 			&i.CommentsView.ID,
 			&i.CommentsView.PostID,

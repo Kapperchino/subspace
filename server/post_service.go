@@ -210,7 +210,7 @@ func (u *PostService) GetPostsForTag(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 
-	list, err := u.getPostsForTag(tag, int64(userId), sort == "popular", int32(days), queries, c)
+	list, err := getPostsForTag(tag, int64(userId), sort == "popular", int32(days), queries, c)
 	if err != nil {
 		return err
 	}
@@ -395,28 +395,68 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 
 func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 	userId, err := c.ParamsInt("id", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
 	if userId == -1 || err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
+	if sort != "latest" && sort != "popular" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if days > 365 {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
 	queries := gen.New(u.getDB())
-	res, err := queries.GetPostsForUser(c.Context(), int64(userId))
+	list, err := u.getPostsForUser(int64(userId), sort == "popular", int32(days), queries, c)
+	if err != nil {
+		return err
+	}
+	return c.JSON(list)
+}
+
+func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+	if !isPopular {
+		res, err := queries.GetPostsForUserLatest(c.Context(), gen.GetPostsForUserLatestParams{
+			Days:   days,
+			UserID: userId,
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Post
+		for _, post := range res {
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			if err != nil {
+				return nil, err
+			}
+			list = append(list, *postModel)
+		}
+		return list, nil
+	}
+	res, err := queries.GetPostsForUserPopular(c.Context(), gen.GetPostsForUserPopularParams{
+		UserID: userId,
+		Days:   days,
+	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return c.SendStatus(fiber.StatusOK)
+			return nil, c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
-		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-
 	var list []models.Post
 	for _, post := range res {
 		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		list = append(list, *postModel)
 	}
-	return c.JSON(list)
+	return list, nil
 }
 
 func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
@@ -509,7 +549,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	return list, nil
 }
 
-func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func getPostsForTag(tag string, userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsWithTagsLatest(c.Context(), gen.GetPostsWithTagsLatestParams{
 			Days:   days,
@@ -525,29 +565,11 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 		}
 		var list []models.Post
 		for _, post := range res {
-			pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, models.Post{
-				Id:            post.Post.ID,
-				SpaceId:       post.Post.SpaceID.Int64,
-				PosterId:      post.Post.PosterID.Int64,
-				Topic:         post.Post.Topic.String,
-				PosterName:    post.DisplayName,
-				ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-				Body:          post.Post.Body.String,
-				Link:          post.Post.Link.String,
-				UpVotes:       post.UpVotes,
-				DownVotes:     post.DownVotes,
-				PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-				SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-				PostPictures:  pictures,
-				Created:       post.Post.Created.Time,
-				Vote:          getVote(post.IsUpVote, post.VoteType),
-				SpaceParentId: post.ParentID,
-				SpaceName:     post.SpaceName,
-			})
+			list = append(list, *postModel)
 		}
 		return list, nil
 	}
@@ -565,29 +587,11 @@ func (u *PostService) getPostsForTag(tag string, userId int64, isPopular bool, d
 	}
 	var list []models.Post
 	for _, post := range res {
-		pictures, err := getPicturesForPost(post.Post.ID, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, models.Post{
-			Id:            post.Post.ID,
-			SpaceId:       post.Post.SpaceID.Int64,
-			PosterId:      post.Post.PosterID.Int64,
-			Topic:         post.Post.Topic.String,
-			PosterName:    post.DisplayName,
-			ContentType:   models.ContentType(post.Post.ContentType.ContentType),
-			Body:          post.Post.Body.String,
-			Link:          post.Post.Link.String,
-			UpVotes:       post.UpVotes,
-			DownVotes:     post.DownVotes,
-			PosterPicture: getPictureMeta(post.UserPicUrl, post.UserPicWidth, post.UserPicHeight, post.UserPicID.Int64),
-			SpacePicture:  getPictureMeta(post.SpaceSmallPicUrl, post.SpaceSmallPicWidth, post.SpaceSmallPicHeight, post.SpaceSmallPicID.Int64),
-			PostPictures:  pictures,
-			Created:       post.Post.Created.Time,
-			Vote:          getVote(post.IsUpVote, post.VoteType),
-			SpaceParentId: post.ParentID,
-			SpaceName:     post.SpaceName,
-		})
+		list = append(list, *postModel)
 	}
 	return list, nil
 }

@@ -13,7 +13,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (password, email, display_name, bio)
 VALUES ($1, $2, $3, $4)
-RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id
+RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id, address, ts
 `
 
 type CreateUserParams struct {
@@ -40,12 +40,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsDeleted,
 		&i.Created,
 		&i.PictureID,
+		&i.Address,
+		&i.Ts,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, p.id, p.url, p.width, p.height
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
 FROM users u
          left join pictures p on u.picture_id = p.id
 WHERE u.id = $1
@@ -72,6 +74,8 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.User.IsDeleted,
 		&i.User.Created,
 		&i.User.PictureID,
+		&i.User.Address,
+		&i.User.Ts,
 		&i.ID,
 		&i.Url,
 		&i.Width,
@@ -81,7 +85,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, p.id, p.url, p.width, p.height
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
 FROM users u
          left join pictures p on u.picture_id = p.id
 WHERE u.email = $1
@@ -108,12 +112,69 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFr
 		&i.User.IsDeleted,
 		&i.User.Created,
 		&i.User.PictureID,
+		&i.User.Address,
+		&i.User.Ts,
 		&i.ID,
 		&i.Url,
 		&i.Width,
 		&i.Height,
 	)
 	return i, err
+}
+
+const searchUsers = `-- name: SearchUsers :many
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
+from users u
+         left join pictures p on u.picture_id = p.id
+where u.is_deleted = false
+ORDER BY ts_rank(u.ts, plainto_tsquery('english', $1)) DESC
+LIMIT 100
+`
+
+type SearchUsersRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+}
+
+func (q *Queries) SearchUsers(ctx context.Context, plaintoTsquery string) ([]SearchUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchUsers, plaintoTsquery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchUsersRow
+	for rows.Next() {
+		var i SearchUsersRow
+		if err := rows.Scan(
+			&i.User.ID,
+			&i.User.Password,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Bio,
+			&i.User.IsDeleted,
+			&i.User.Created,
+			&i.User.PictureID,
+			&i.User.Address,
+			&i.User.Ts,
+			&i.ID,
+			&i.Url,
+			&i.Width,
+			&i.Height,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updatePicture = `-- name: UpdatePicture :exec
@@ -136,7 +197,7 @@ const updateUserBio = `-- name: UpdateUserBio :exec
 UPDATE users
 set bio = $1
 where id = $2
-RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id
+RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id, address, ts
 `
 
 type UpdateUserBioParams struct {

@@ -298,7 +298,7 @@ func (u *UserService) SearchUsers(c *fiber.Ctx) error {
 	var output []models.UserInfo
 	for _, user := range res {
 		output = append(output, models.UserInfo{
-			UserID:      user.ID.Int64,
+			UserID:      user.User.ID,
 			DisplayName: user.User.DisplayName,
 			PictureMeta: getPictureMeta(user.Url, user.Width, user.Height, user.ID.Int64),
 			Bio:         user.User.Bio.String,

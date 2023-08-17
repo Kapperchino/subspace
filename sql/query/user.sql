@@ -33,5 +33,6 @@ SELECT sqlc.embed(u), p.*
 from users u
          left join pictures p on u.picture_id = p.id
 where u.is_deleted = false
+AND u.id != 1
 ORDER BY ts_rank(u.ts, plainto_tsquery('english', $1)) DESC
 LIMIT 100;

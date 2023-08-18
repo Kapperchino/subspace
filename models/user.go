@@ -4,6 +4,7 @@ type UserCreation struct {
 	Password    string `validate:"required" json:"password"`
 	Email       string `validate:"required,email" json:"email"`
 	DisplayName string `validate:"required,max=400" json:"display_name"`
+	UserAddress string `validate:"required,max=50,alphanum,lowercase" json:"user_address"`
 	Bio         string `json:"bio"`
 }
 
@@ -22,6 +23,7 @@ type UserMeta struct {
 	Bio         string       `json:"bio"`
 	Token       string       `json:"token"`
 	Email       string       `json:"email"`
+	UserAddress string       `json:"user_address"`
 }
 
 type UserInfo struct {
@@ -29,6 +31,7 @@ type UserInfo struct {
 	DisplayName string       `json:"display_name"`
 	Bio         string       `json:"bio"`
 	PictureMeta *PictureMeta `json:"picture_meta"`
+	UserAddress string       `json:"user_address"`
 }
 
 type Login struct {

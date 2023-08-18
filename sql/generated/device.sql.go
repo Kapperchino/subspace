@@ -60,6 +60,41 @@ func (q *Queries) GetDeviceByDeviceInfo(ctx context.Context, arg GetDeviceByDevi
 	return i, err
 }
 
+const getDevicesForUser = `-- name: GetDevicesForUser :many
+SELECT id, user_id, registration, is_deleted, device_info
+FROM devices
+where user_id = $1
+`
+
+func (q *Queries) GetDevicesForUser(ctx context.Context, userID sql.NullInt64) ([]Device, error) {
+	rows, err := q.db.QueryContext(ctx, getDevicesForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Device
+	for rows.Next() {
+		var i Device
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Registration,
+			&i.IsDeleted,
+			&i.DeviceInfo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDevicesFromCommentId = `-- name: GetDevicesFromCommentId :many
 SELECT id, user_id, registration, is_deleted, device_info
 FROM devices

@@ -52,35 +52,6 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		req.ContentType = models.CONTENT_TEXT
 	}
 
-	var tags []gen.Tag
-	if req.Body != "" {
-		r := util.TagRegex
-		res := r.FindAllString(req.Body, -1)
-		if res != nil {
-			for _, s := range res {
-				trimmed := strings.TrimSpace(s)
-				switch trimmed[0] {
-				case '@':
-					break
-				case '#':
-					tag, err := queries.GetTag(c.Context(), trimmed[1:])
-					if err != nil && errors.Is(err, sql.ErrNoRows) || tag.ID == 0 {
-						tag, err = queries.CreateTag(c.Context(), trimmed[1:])
-						if err != nil {
-							log.Error().Err(err).Msg("Error while creating using in db")
-							return c.Status(fiber.StatusInternalServerError).SendStatus(500)
-						}
-					}
-					if err != nil {
-						log.Error().Err(err).Msg("Error while creating using in db")
-						return c.Status(fiber.StatusInternalServerError).SendStatus(500)
-					}
-					tags = append(tags, tag)
-					break
-				}
-			}
-		}
-	}
 	post, err := queries.CreatePost(c.Context(), gen.CreatePostParams{
 		SpaceID: sql.NullInt64{
 			Int64: req.SpaceId,
@@ -110,6 +81,57 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	if err != nil {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+
+	var tags []gen.Tag
+	if req.Body != "" {
+		r := util.TagRegex
+		res := r.FindAllString(req.Body, -1)
+		if res != nil {
+			for _, s := range res {
+				trimmed := strings.TrimSpace(s)
+				switch trimmed[0] {
+				case '@':
+					address := trimmed[1:]
+					user, err := queries.GetUserFromAddress(c.Context(), sql.NullString{
+						String: address,
+						Valid:  true,
+					})
+					if err != nil && errors.Is(err, sql.ErrNoRows) {
+						return c.SendStatus(fiber.StatusNotFound)
+					}
+					if err != nil {
+						log.Error().Err(err).Msg("Error while creating using in db")
+						return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+					}
+					_, err = queries.CreateUserAddress(c.Context(), gen.CreateUserAddressParams{
+						FromUserID: sql.NullInt64{Int64: req.PosterId, Valid: true},
+						ToUserID:   sql.NullInt64{Int64: user.User.ID, Valid: true},
+						PostID:     sql.NullInt64{Int64: post.ID, Valid: true},
+					})
+					if err != nil {
+						log.Error().Err(err).Msg("Error while creating using in db")
+						return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+					}
+					break
+				case '#':
+					tag, err := queries.GetTag(c.Context(), trimmed[1:])
+					if err != nil && errors.Is(err, sql.ErrNoRows) || tag.ID == 0 {
+						tag, err = queries.CreateTag(c.Context(), trimmed[1:])
+						if err != nil {
+							log.Error().Err(err).Msg("Error while creating using in db")
+							return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+						}
+					}
+					if err != nil {
+						log.Error().Err(err).Msg("Error while creating using in db")
+						return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+					}
+					tags = append(tags, tag)
+					break
+				}
+			}
+		}
 	}
 
 	if req.ContentType == models.CONTENT_PICTURE && req.FileIds != nil {

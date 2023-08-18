@@ -51,6 +51,7 @@ func (u *UserService) CreateUser(c *fiber.Ctx) error {
 		Email:       req.Email,
 		DisplayName: req.DisplayName,
 		Bio:         sql.NullString{String: req.Bio},
+		Address:     sql.NullString{String: req.UserAddress, Valid: true},
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -88,6 +89,7 @@ func (u *UserService) CreateUser(c *fiber.Ctx) error {
 		Bio:         user.Bio.String,
 		Token:       t,
 		Email:       user.Email,
+		UserAddress: user.Address.String,
 	})
 }
 
@@ -182,6 +184,7 @@ func (u *UserService) Login(c *fiber.Ctx) error {
 		Bio:         user.Bio.String,
 		Token:       t,
 		Email:       user.Email,
+		UserAddress: user.Address.String,
 		PictureMeta: getPictureMeta(queryRes.Url, queryRes.Width, queryRes.Height, queryRes.ID.Int64),
 	})
 }
@@ -209,6 +212,7 @@ func (u *UserService) GetUserById(c *fiber.Ctx) error {
 		UserID:      res.User.ID,
 		DisplayName: res.User.DisplayName,
 		Bio:         res.User.Bio.String,
+		UserAddress: res.User.Address.String,
 		PictureMeta: getPictureMeta(res.Url, res.Width, res.Height, res.ID.Int64),
 	})
 }
@@ -300,6 +304,7 @@ func (u *UserService) SearchUsers(c *fiber.Ctx) error {
 		output = append(output, models.UserInfo{
 			UserID:      user.User.ID,
 			DisplayName: user.User.DisplayName,
+			UserAddress: user.User.Address.String,
 			PictureMeta: getPictureMeta(user.Url, user.Width, user.Height, user.ID.Int64),
 			Bio:         user.User.Bio.String,
 		})

@@ -11,8 +11,8 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (password, email, display_name, bio)
-VALUES ($1, $2, $3, $4)
+INSERT INTO users (password, email, display_name, bio, address)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, password, email, display_name, bio, is_deleted, created, picture_id, address, ts
 `
 
@@ -21,6 +21,7 @@ type CreateUserParams struct {
 	Email       string
 	DisplayName string
 	Bio         sql.NullString
+	Address     sql.NullString
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -29,6 +30,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Email,
 		arg.DisplayName,
 		arg.Bio,
+		arg.Address,
 	)
 	var i User
 	err := row.Scan(
@@ -65,6 +67,44 @@ type GetUserRow struct {
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i GetUserRow
+	err := row.Scan(
+		&i.User.ID,
+		&i.User.Password,
+		&i.User.Email,
+		&i.User.DisplayName,
+		&i.User.Bio,
+		&i.User.IsDeleted,
+		&i.User.Created,
+		&i.User.PictureID,
+		&i.User.Address,
+		&i.User.Ts,
+		&i.ID,
+		&i.Url,
+		&i.Width,
+		&i.Height,
+	)
+	return i, err
+}
+
+const getUserFromAddress = `-- name: GetUserFromAddress :one
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.address = $1
+LIMIT 1
+`
+
+type GetUserFromAddressRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+}
+
+func (q *Queries) GetUserFromAddress(ctx context.Context, address sql.NullString) (GetUserFromAddressRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserFromAddress, address)
+	var i GetUserFromAddressRow
 	err := row.Scan(
 		&i.User.ID,
 		&i.User.Password,
@@ -127,7 +167,7 @@ SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created
 from users u
          left join pictures p on u.picture_id = p.id
 where u.is_deleted = false
-AND u.id != 1
+  AND u.id != 1
 ORDER BY ts_rank(u.ts, plainto_tsquery('english', $1)) DESC
 LIMIT 100
 `

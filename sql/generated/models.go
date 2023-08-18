@@ -236,6 +236,13 @@ type User struct {
 	Ts          interface{}
 }
 
+type UserAddress struct {
+	ID         int64
+	FromUserID sql.NullInt64
+	ToUserID   sql.NullInt64
+	PostID     sql.NullInt64
+}
+
 type Vote struct {
 	ID              int64
 	IsUpVote        sql.NullBool

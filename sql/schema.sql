@@ -32,6 +32,31 @@ CREATE TYPE public.vote_type AS ENUM (
 
 
 --
+-- Name: notify_addresses_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_addresses_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    row    RECORD;
+    output TEXT;
+BEGIN
+    row = NEW;
+    -- Forming the Output as notification. You can choose you own notification.
+    output = json_build_object('from_id', row.from_user_id, 'to_id', row.to_user_id, 'post_id', row.post_id);
+
+    -- Calling the pg_notify for my_table_update event with output as payload
+
+    PERFORM pg_notify('addresses_update', output);
+
+    -- Returning null because it is an after trigger.
+    RETURN NULL;
+END ;
+$$;
+
+
+--
 -- Name: notify_comments_update(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -512,6 +537,37 @@ ALTER SEQUENCE public.tags_relations_id_seq OWNED BY public.tags_relations.id;
 
 
 --
+-- Name: user_addresses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_addresses (
+    id bigint NOT NULL,
+    from_user_id bigint,
+    to_user_id bigint,
+    post_id bigint
+);
+
+
+--
+-- Name: user_addresses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_addresses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_addresses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_addresses_id_seq OWNED BY public.user_addresses.id;
+
+
+--
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -624,6 +680,13 @@ ALTER TABLE ONLY public.tags ALTER COLUMN id SET DEFAULT nextval('public.tags_id
 --
 
 ALTER TABLE ONLY public.tags_relations ALTER COLUMN id SET DEFAULT nextval('public.tags_relations_id_seq'::regclass);
+
+
+--
+-- Name: user_addresses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses ALTER COLUMN id SET DEFAULT nextval('public.user_addresses_id_seq'::regclass);
 
 
 --
@@ -761,6 +824,14 @@ ALTER TABLE ONLY public.tags_relations
 
 
 --
+-- Name: user_addresses user_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses
+    ADD CONSTRAINT user_addresses_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users users_display_name_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -805,6 +876,13 @@ ALTER TABLE ONLY public.votes
 --
 
 CREATE TRIGGER trigger_comment_update AFTER INSERT OR UPDATE ON public.comments FOR EACH ROW EXECUTE FUNCTION public.notify_comments_update();
+
+
+--
+-- Name: user_addresses trigger_user_addresses_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_user_addresses_update AFTER INSERT OR UPDATE ON public.user_addresses FOR EACH ROW EXECUTE FUNCTION public.notify_addresses_update();
 
 
 --
@@ -912,6 +990,30 @@ ALTER TABLE ONLY public.tags_relations
 
 
 --
+-- Name: user_addresses user_addresses_from_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses
+    ADD CONSTRAINT user_addresses_from_user_id_fkey FOREIGN KEY (from_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: user_addresses user_addresses_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses
+    ADD CONSTRAINT user_addresses_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id);
+
+
+--
+-- Name: user_addresses user_addresses_to_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses
+    ADD CONSTRAINT user_addresses_to_user_id_fkey FOREIGN KEY (to_user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: votes votes_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -947,4 +1049,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230807184711'),
     ('20230813191626'),
     ('20230814193310'),
-    ('20230816221347');
+    ('20230816221347'),
+    ('20230817234446'),
+    ('20230818000725');

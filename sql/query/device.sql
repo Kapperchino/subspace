@@ -29,3 +29,8 @@ FROM devices
 where user_id = (SELECT p.poster_id
                  FROM posts p
                  where p.id = $1);
+
+-- name: GetDevicesForUser :many
+SELECT *
+FROM devices
+where user_id = $1;

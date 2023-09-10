@@ -15,6 +15,7 @@ type Space struct {
 	Description       string       `json:"description"`
 	SmallPicture      *PictureMeta `json:"small_picture"`
 	BackgroundPicture *PictureMeta `json:"background_picture"`
+	SubCount          int64        `json:"sub_count"`
 }
 
 type SpaceCreationRes struct {

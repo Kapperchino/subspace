@@ -46,12 +46,13 @@ func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 	var list []models.Space
 	for _, space := range res {
 		list = append(list, models.Space{
-			ID:                space.Space.ID,
-			ParentID:          space.Space.ParentID,
-			Name:              space.Space.Name,
-			Description:       space.Space.Description.String,
+			ID:                space.ID,
+			ParentID:          space.ParentID,
+			Name:              space.Name,
+			Description:       space.Description.String,
 			SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
-			BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight, space.SpaceSmallPictureID.Int64),
+			BackgroundPicture: getPictureMeta(space.SpaceBackgroundPictureUrl, space.SpaceBackgroundPictureWidth, space.SpaceBackgroundPictureHeight, space.SpaceSmallPictureID.Int64),
+			SubCount:          space.SubCount,
 		})
 	}
 	return c.JSON(list)

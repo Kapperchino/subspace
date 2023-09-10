@@ -695,5 +695,6 @@ func getPost(postView gen.PostsView, isUpvote sql.NullBool, voteType gen.NullVot
 		Vote:          getVote(isUpvote, voteType),
 		SpaceParentId: postView.ParentID,
 		SpaceName:     postView.SpaceName,
+		CommentsCount: postView.CommentCount,
 	}, nil
 }

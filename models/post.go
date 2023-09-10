@@ -28,6 +28,7 @@ type Post struct {
 	ContentType   ContentType    `json:"content_type"`
 	UpVotes       int64          `json:"up_votes"`
 	DownVotes     int64          `json:"down_votes"`
+	CommentsCount int64          `json:"comments_count"`
 	Created       time.Time      `json:"created"`
 	Vote          *Vote          `json:"vote"`
 }

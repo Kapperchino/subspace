@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -83,12 +84,12 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Space{
-		ID:                res.Space.ID,
-		ParentID:          res.Space.ParentID,
-		Name:              res.Space.Name,
+		ID:                res.ID,
+		ParentID:          res.ParentID,
+		Name:              res.Name,
 		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight, res.SpaceSmallPictureID.Int64),
-		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight, res.BackgroundPictureID.Int64),
-		Description:       res.Space.Description.String,
+		BackgroundPicture: getPictureMeta(res.SpaceBackgroundPictureUrl, res.SpaceBackgroundPictureWidth, res.SpaceBackgroundPictureHeight, res.SpaceBackgroundPictureID.Int64),
+		Description:       res.Description.String,
 	})
 }
 
@@ -112,12 +113,12 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		var spaces []models.Space
 		for _, space := range res {
 			spaces = append(spaces, models.Space{
-				ID:                space.Space.ID,
-				ParentID:          space.Space.ParentID,
-				Name:              space.Space.Name,
+				ID:                space.ID,
+				ParentID:          space.ParentID,
+				Name:              space.Name,
 				SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
-				BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight, space.BackgroundPictureID.Int64),
-				Description:       space.Space.Description.String,
+				BackgroundPicture: getPictureMeta(space.SpaceBackgroundPictureUrl, space.SpaceBackgroundPictureWidth, space.SpaceBackgroundPictureHeight, space.BackgroundPictureID.Int64),
+				Description:       space.Description.String,
 			})
 		}
 		return c.JSON(spaces)
@@ -135,13 +136,62 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
 	return c.JSON(models.Space{
-		ID:                res.Space.ID,
-		ParentID:          res.Space.ParentID,
-		Name:              res.Space.Name,
+		ID:                res.ID,
+		ParentID:          res.ParentID,
+		Name:              res.Name,
 		SmallPicture:      getPictureMeta(res.SpaceSmallPicUrl, res.SpaceSmallPicWidth, res.SpaceSmallPicHeight, res.SpaceSmallPictureID.Int64),
-		BackgroundPicture: getPictureMeta(res.BackgroundPictureUrl, res.BackgroundPictureWidth, res.BackgroundPictureHeight, res.BackgroundPictureID.Int64),
-		Description:       res.Space.Description.String,
+		BackgroundPicture: getPictureMeta(res.SpaceBackgroundPictureUrl, res.SpaceBackgroundPictureWidth, res.SpaceBackgroundPictureHeight, res.SpaceBackgroundPictureID.Int64),
+		Description:       res.Description.String,
 	})
+}
+
+func (u *SpaceService) GetSpacesSorted(c *fiber.Ctx) error {
+	sort := c.Query("sortBy", "latest")
+	queries := gen.New(u.getDB())
+	if sort == "popular" {
+		res, err := queries.GetPopularSpaces(c.Context())
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return c.Send(nil)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var spaces []models.Space
+		for _, space := range res {
+			spaces = append(spaces, models.Space{
+				ID:                space.ID,
+				ParentID:          space.ParentID,
+				Name:              space.Name,
+				SubCount:          space.SubCount,
+				SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
+				BackgroundPicture: getPictureMeta(space.SpaceBackgroundPictureUrl, space.SpaceBackgroundPictureWidth, space.SpaceBackgroundPictureHeight, space.BackgroundPictureID.Int64),
+				Description:       space.Description.String,
+			})
+		}
+		return c.JSON(spaces)
+	}
+	res, err := queries.GetNewSpaces(c.Context())
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.Send(nil)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var spaces []models.Space
+	for _, space := range res {
+		spaces = append(spaces, models.Space{
+			ID:                space.ID,
+			ParentID:          space.ParentID,
+			Name:              space.Name,
+			SubCount:          space.SubCount,
+			SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
+			BackgroundPicture: getPictureMeta(space.SpaceBackgroundPictureUrl, space.SpaceBackgroundPictureWidth, space.SpaceBackgroundPictureHeight, space.BackgroundPictureID.Int64),
+			Description:       space.Description.String,
+		})
+	}
+	return c.JSON(spaces)
 }
 
 func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
@@ -162,12 +212,12 @@ func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
 	var spaces []models.Space
 	for _, space := range res {
 		spaces = append(spaces, models.Space{
-			ID:                space.Space.ID,
-			ParentID:          space.Space.ParentID,
-			Name:              space.Space.Name,
+			ID:                space.ID,
+			ParentID:          space.ParentID,
+			Name:              space.Name,
 			SmallPicture:      getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
-			BackgroundPicture: getPictureMeta(space.BackgroundPictureUrl, space.BackgroundPictureWidth, space.BackgroundPictureHeight, space.BackgroundPictureID.Int64),
-			Description:       space.Space.Description.String,
+			BackgroundPicture: getPictureMeta(space.SpaceBackgroundPictureUrl, space.SpaceBackgroundPictureWidth, space.SpaceBackgroundPictureHeight, space.BackgroundPictureID.Int64),
+			Description:       space.Description.String,
 		})
 	}
 	return c.JSON(spaces)

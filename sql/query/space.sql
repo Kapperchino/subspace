@@ -1,88 +1,47 @@
 -- name: GetSpace :one
-SELECT sqlc.embed(s),
-       small_picture.url         as space_small_pic_url,
-       small_picture.width       as space_small_pic_width,
-       small_picture.height      as space_small_pic_height,
-       small_picture.id          as space_small_picture_id,
-       background_picture.url    as background_picture_url,
-       background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height,
-       background_picture.id     as background_picture_id
-FROM spaces s
-         left join pictures small_picture on s.small_picture_id = small_picture.id
-         left join pictures background_picture on s.background_picture_id = background_picture.id
-WHERE s.id = $1
-LIMIT 1;
+SELECT *
+FROM spaces_view s
+WHERE s.id = $1 LIMIT 1;
 
 -- name: GetSpacesOfParent :many
-SELECT sqlc.embed(s),
-       small_picture.url         as space_small_pic_url,
-       small_picture.width       as space_small_pic_width,
-       small_picture.height      as space_small_pic_height,
-       small_picture.id          as space_small_picture_id,
-       background_picture.url    as background_picture_url,
-       background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height,
-       background_picture.id     as background_picture_id
-FROM spaces s
-         left join pictures small_picture on s.small_picture_id = small_picture.id
-         left join pictures background_picture on s.background_picture_id = background_picture.id
+SELECT *
+from spaces_view s
 WHERE s.parent_id = $1;
 
 -- name: GetSpaceByName :one
-SELECT sqlc.embed(s),
-       small_picture.url         as space_small_pic_url,
-       small_picture.width       as space_small_pic_width,
-       small_picture.height      as space_small_pic_height,
-       small_picture.id          as space_small_picture_id,
-       background_picture.url    as background_picture_url,
-       background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height,
-       background_picture.id     as background_picture_id
-FROM spaces s
-         left join pictures small_picture on s.small_picture_id = small_picture.id
-         left join pictures background_picture on s.background_picture_id = background_picture.id
+SELECT *
+FROM spaces_view s
 WHERE s.name = $1
-  AND s.parent_id = $2
-LIMIT 1;
+  AND s.parent_id = $2 LIMIT 1;
 
 -- name: GetUserSpaces :many
-SELECT sqlc.embed(sp),
-       small_picture.url         as space_small_pic_url,
-       small_picture.width       as space_small_pic_width,
-       small_picture.height      as space_small_pic_height,
-       small_picture.id          as space_small_picture_id,
-       background_picture.url    as background_picture_url,
-       background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height,
-       background_picture.id     as background_picture_id
+SELECT sp.*
 FROM subscriptions su
-         JOIN spaces sp ON su.space_id = sp.id
-         left join pictures small_picture on s.small_picture_id = small_picture.id
-         left join pictures background_picture on s.background_picture_id = background_picture.id
+         JOIN spaces_view sp ON su.space_id = sp.id
 WHERE su.user_id = $1
   AND su.is_deleted = false;
 
+-- name: GetPopularSpaces :many
+SELECT *
+FROM spaces_view s
+WHERE s.id != 1
+ORDER BY s.sub_count DESC;
+
+-- name: GetNewSpaces :many
+SELECT *
+FROM spaces_view s
+WHERE s.id != 1
+ORDER BY s.created DESC;
+
 -- name: SearchSpace :many
-SELECT sqlc.embed(s),
-       small_picture.url         as space_small_pic_url,
-       small_picture.width       as space_small_pic_width,
-       small_picture.height      as space_small_pic_height,
-       small_picture.id          as space_small_picture_id,
-       background_picture.url    as background_picture_url,
-       background_picture.width  as background_picture_width,
-       background_picture.height as background_picture_height,
-       background_picture.id     as background_picture_id
-FROM spaces s
-         left join pictures small_picture on s.small_picture_id = small_picture.id
-         left join pictures background_picture on s.background_picture_id = background_picture.id
+SELECT *
+FROM spaces_view s
 WHERE s.id != 1
 ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC;
 
 -- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, small_picture_id, background_picture_id)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING *;
+VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: DeleteSpace :exec
 DELETE

@@ -130,6 +130,8 @@ func main() {
 
 	app.Get("/spaces/", spaceService.GetSpaces)
 
+	app.Get("/spaces/sort/", spaceService.GetSpacesSorted)
+
 	app.Get("/spaces/:id", spaceService.GetSpaceById)
 
 	app.Get("/spaces/users/:id", spaceService.GetSpacesForUser)

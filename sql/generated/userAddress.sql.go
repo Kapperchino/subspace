@@ -13,7 +13,7 @@ import (
 const createUserAddress = `-- name: CreateUserAddress :one
 INSERT INTO user_addresses (from_user_id, to_user_id, post_id)
 VALUES ($1, $2, $3)
-RETURNING id, from_user_id, to_user_id, post_id
+RETURNING id, from_user_id, to_user_id, post_id, comment_id
 `
 
 type CreateUserAddressParams struct {
@@ -30,6 +30,7 @@ func (q *Queries) CreateUserAddress(ctx context.Context, arg CreateUserAddressPa
 		&i.FromUserID,
 		&i.ToUserID,
 		&i.PostID,
+		&i.CommentID,
 	)
 	return i, err
 }

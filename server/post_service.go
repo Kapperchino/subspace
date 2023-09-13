@@ -154,12 +154,15 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 	}
 
 	for _, tag := range tags {
-		_, err = queries.CreateTagRelation(c.Context(), gen.CreateTagRelationParams{
+		_, err = queries.CreateTagRelationForPost(c.Context(), gen.CreateTagRelationForPostParams{
 			TagID: sql.NullInt64{
 				Int64: tag.ID,
 				Valid: true,
 			},
-			PostOrCommentID: post.ID,
+			PostID: sql.NullInt64{
+				Int64: post.ID,
+				Valid: true,
+			},
 		})
 		if err != nil {
 			log.Error().Err(err).Msg("Error while creating using in db")

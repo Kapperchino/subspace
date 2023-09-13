@@ -105,6 +105,12 @@ func main() {
 		UploadClient: uploadClient,
 	}
 
+	tagService := server.TagService{
+		DB:         db,
+		Config:     config,
+		Validation: validation,
+	}
+
 	app.Use(cors.New())
 	// Create user
 	app.Post("/auth/user", userService.CreateUser)
@@ -190,6 +196,9 @@ func main() {
 	app.Put("/files", fileService.UploadFile)
 
 	app.Get("/files/:id", fileService.GetFile)
+
+	//tags
+	app.Get("/tags", tagService.GetPopularTags)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

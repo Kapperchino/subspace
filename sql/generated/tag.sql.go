@@ -24,28 +24,72 @@ func (q *Queries) CreateTag(ctx context.Context, name string) (Tag, error) {
 	return i, err
 }
 
-const createTagRelation = `-- name: CreateTagRelation :one
-INSERT INTO tags_relations (tag_id, post_or_comment_id)
+const createTagRelationForPost = `-- name: CreateTagRelationForPost :one
+INSERT INTO tags_relations (tag_id, post_id)
 VALUES ($1, $2)
-RETURNING id, tag_id, post_or_comment_id
+RETURNING id, tag_id, post_id, comment_id
 `
 
-type CreateTagRelationParams struct {
-	TagID           sql.NullInt64
-	PostOrCommentID int64
+type CreateTagRelationForPostParams struct {
+	TagID  sql.NullInt64
+	PostID sql.NullInt64
 }
 
-func (q *Queries) CreateTagRelation(ctx context.Context, arg CreateTagRelationParams) (TagsRelation, error) {
-	row := q.db.QueryRowContext(ctx, createTagRelation, arg.TagID, arg.PostOrCommentID)
+func (q *Queries) CreateTagRelationForPost(ctx context.Context, arg CreateTagRelationForPostParams) (TagsRelation, error) {
+	row := q.db.QueryRowContext(ctx, createTagRelationForPost, arg.TagID, arg.PostID)
 	var i TagsRelation
-	err := row.Scan(&i.ID, &i.TagID, &i.PostOrCommentID)
+	err := row.Scan(
+		&i.ID,
+		&i.TagID,
+		&i.PostID,
+		&i.CommentID,
+	)
 	return i, err
+}
+
+const getPopularTags = `-- name: GetPopularTags :many
+select t.name, COUNT(DISTINCT tr.post_id) AS count
+from tags_relations tr
+         join posts_view pv on pv.id = tr.post_id
+         join tags t on t.id = tr.tag_id
+WHERE pv.id != 1
+  AND current_timestamp - pv.created < make_interval(days => $1)
+GROUP BY tr.tag_id, t.name
+ORDER BY COUNT(tr.tag_id) DESC
+`
+
+type GetPopularTagsRow struct {
+	Name  string
+	Count int64
+}
+
+func (q *Queries) GetPopularTags(ctx context.Context, days int32) ([]GetPopularTagsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPopularTags, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPopularTagsRow
+	for rows.Next() {
+		var i GetPopularTagsRow
+		if err := rows.Scan(&i.Name, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPostsWithTagsLatest = `-- name: GetPostsWithTagsLatest :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, p.comment_count, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts_view p
-         join tags_relations t on t.post_or_comment_id = p.id
+         join tags_relations t on t.post_id = p.id
          join tags t1 on t.tag_id = t1.id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'
@@ -128,7 +172,7 @@ func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTa
 const getPostsWithTagsPopular = `-- name: GetPostsWithTagsPopular :many
 SELECT p.id, p.space_id, p.poster_id, p.topic, p.body, p.content_type, p.is_deleted, p.created, p.ts, p.link, p.display_name, p.user_pic_url, p.user_pic_width, p.user_pic_height, p.user_pic_id, p.space_small_pic_url, p.space_small_pic_width, p.space_small_pic_height, p.space_small_pic_id, p.parent_id, p.space_name, p.up_votes, p.down_votes, p.comment_count, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM posts_view p
-         join tags_relations t on t.post_or_comment_id = p.id
+         join tags_relations t on t.post_id = p.id
          join tags t1 on t.tag_id = t1.id
          left join votes v on p.poster_id = v.user_id and v.user_id = $1 and p.id = v.post_or_comment_id and
                               v.vote_type = 'post'

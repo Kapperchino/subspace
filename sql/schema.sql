@@ -386,12 +386,15 @@ CREATE VIEW public.posts_view AS
     space_small_pic.id AS space_small_pic_id,
     s.parent_id,
     s.name AS space_name,
-    ( SELECT count(v.id) AS count
+    ( SELECT count(*) AS count
            FROM public.votes v
           WHERE ((v.post_or_comment_id = p.id) AND (v.is_deleted = false) AND (v.is_up_vote = true) AND (v.vote_type = 'post'::public.vote_type))) AS up_votes,
-    ( SELECT count(v.id) AS count
+    ( SELECT count(*) AS count
            FROM public.votes v
-          WHERE ((v.post_or_comment_id = p.id) AND (v.is_deleted = false) AND (v.is_up_vote = false) AND (v.vote_type = 'post'::public.vote_type))) AS down_votes
+          WHERE ((v.post_or_comment_id = p.id) AND (v.is_deleted = false) AND (v.is_up_vote = false) AND (v.vote_type = 'post'::public.vote_type))) AS down_votes,
+    ( SELECT count(*) AS count
+           FROM public.comments c
+          WHERE ((c.post_id = p.id) AND (c.is_deleted = false))) AS comment_count
    FROM ((((public.posts p
      JOIN public.users u ON ((p.poster_id = u.id)))
      JOIN public.spaces s ON ((s.id = p.space_id)))
@@ -459,6 +462,36 @@ CREATE TABLE public.subscriptions (
 
 
 --
+-- Name: spaces_view; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.spaces_view AS
+ SELECT s.id,
+    s.parent_id,
+    s.name,
+    s.description,
+    s.is_deleted,
+    s.created,
+    s.ts,
+    s.small_picture_id,
+    s.background_picture_id,
+    small_picture.url AS space_small_pic_url,
+    small_picture.width AS space_small_pic_width,
+    small_picture.height AS space_small_pic_height,
+    small_picture.id AS space_small_picture_id,
+    background_picture.url AS space_background_picture_url,
+    background_picture.width AS space_background_picture_width,
+    background_picture.height AS space_background_picture_height,
+    background_picture.id AS space_background_picture_id,
+    ( SELECT count(*) AS count
+           FROM public.subscriptions sub
+          WHERE ((sub.space_id = s.id) AND (sub.is_deleted = false))) AS sub_count
+   FROM ((public.spaces s
+     LEFT JOIN public.pictures small_picture ON ((s.small_picture_id = small_picture.id)))
+     LEFT JOIN public.pictures background_picture ON ((s.background_picture_id = background_picture.id)));
+
+
+--
 -- Name: subscriptions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -513,7 +546,8 @@ ALTER SEQUENCE public.tags_id_seq OWNED BY public.tags.id;
 CREATE TABLE public.tags_relations (
     id bigint NOT NULL,
     tag_id bigint,
-    post_or_comment_id bigint NOT NULL
+    post_id bigint,
+    comment_id bigint
 );
 
 
@@ -544,7 +578,8 @@ CREATE TABLE public.user_addresses (
     id bigint NOT NULL,
     from_user_id bigint,
     to_user_id bigint,
-    post_id bigint
+    post_id bigint,
+    comment_id bigint
 );
 
 
@@ -982,11 +1017,35 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: tags_relations tags_relations_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags_relations
+    ADD CONSTRAINT tags_relations_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(id);
+
+
+--
+-- Name: tags_relations tags_relations_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags_relations
+    ADD CONSTRAINT tags_relations_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id);
+
+
+--
 -- Name: tags_relations tags_relations_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tags_relations
     ADD CONSTRAINT tags_relations_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id);
+
+
+--
+-- Name: user_addresses user_addresses_comment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_addresses
+    ADD CONSTRAINT user_addresses_comment_id_fkey FOREIGN KEY (comment_id) REFERENCES public.comments(id);
 
 
 --
@@ -1051,4 +1110,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20230814193310'),
     ('20230816221347'),
     ('20230817234446'),
-    ('20230818000725');
+    ('20230818000725'),
+    ('20230909213702'),
+    ('20230911032455'),
+    ('20230911033911');

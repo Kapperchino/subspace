@@ -240,9 +240,10 @@ type Tag struct {
 }
 
 type TagsRelation struct {
-	ID              int64
-	TagID           sql.NullInt64
-	PostOrCommentID int64
+	ID        int64
+	TagID     sql.NullInt64
+	PostID    sql.NullInt64
+	CommentID sql.NullInt64
 }
 
 type User struct {
@@ -263,6 +264,7 @@ type UserAddress struct {
 	FromUserID sql.NullInt64
 	ToUserID   sql.NullInt64
 	PostID     sql.NullInt64
+	CommentID  sql.NullInt64
 }
 
 type Vote struct {

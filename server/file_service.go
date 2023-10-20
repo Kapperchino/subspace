@@ -42,9 +42,38 @@ func (d *FileService) UploadFile(c *fiber.Ctx) error {
 	}
 	queries := gen.New(d.getDB())
 	//only supporting file atm
-	if req.FileType != models.FILE_PICTURE {
-		return c.SendStatus(fiber.StatusBadRequest)
+	if req.FileType == models.FILE_PICTURE {
+		return d.uploadPicture(req, queries, c)
+	} else if req.FileType == models.FILE_VIDEO {
+		return d.uploadVideo(req, queries, c)
 	}
+	return c.SendStatus(fiber.StatusBadRequest)
+}
+
+func (d *FileService) uploadVideo(req *models.FileUploadRequest, queries *gen.Queries, c *fiber.Ctx) error {
+	preSigned, fileName, err := d.getPresigned(c)
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting presigned url for picture")
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+
+	content := "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+	res, err := queries.CreateVideo(c.Context(), gen.CreateVideoParams{
+		Url:          content,
+		ProcessState: gen.NullProcessState{ProcessState: gen.ProcessStateOngoing},
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	return c.Status(200).JSON(models.VideoCreationResult{
+		Presigned: preSigned,
+		Id:        res.ID,
+		Url:       content,
+	})
+}
+
+func (d *FileService) uploadPicture(req *models.FileUploadRequest, queries *gen.Queries, c *fiber.Ctx) error {
 	if req.IsLink {
 		res, err := queries.CreatePicture(c.Context(), gen.CreatePictureParams{
 			Url:    req.PictureMeta.Url,

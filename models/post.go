@@ -25,6 +25,7 @@ type Post struct {
 	Link          string         `json:"link"`
 	Body          string         `json:"body"`
 	PostPictures  []*PictureMeta `json:"post_pictures"`
+	PostVideos    []*VideoMeta   `json:"post_videos"`
 	ContentType   ContentType    `json:"content_type"`
 	UpVotes       int64          `json:"up_votes"`
 	DownVotes     int64          `json:"down_votes"`

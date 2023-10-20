@@ -153,6 +153,25 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		}
 	}
 
+	if req.ContentType == models.CONTENT_VIDEO && req.FileIds != nil {
+		for _, id := range req.FileIds {
+			_, err := queries.CreateVideoRelation(c.Context(), gen.CreateVideoRelationParams{
+				VideoID: sql.NullInt64{
+					Int64: id,
+					Valid: true,
+				},
+				PostID: sql.NullInt64{
+					Int64: post.ID,
+					Valid: true,
+				},
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("Error while creating picture relations in db")
+				return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+			}
+		}
+	}
+
 	for _, tag := range tags {
 		_, err = queries.CreateTagRelationForPost(c.Context(), gen.CreateTagRelationForPostParams{
 			TagID: sql.NullInt64{
@@ -212,7 +231,7 @@ func (u *PostService) GetPostById(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	postModel, err := getPost(res.PostsView, res.IsUpVote, res.VoteType, queries, c)
+	postModel, err := getPost(res.PostsView, res.IsUpVote, res.VoteType, res.IsDeleted, queries, c)
 	if err != nil {
 		return err
 	}
@@ -335,7 +354,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -360,7 +379,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -386,7 +405,7 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -409,7 +428,7 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -454,7 +473,7 @@ func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, 
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -475,7 +494,7 @@ func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, 
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -499,7 +518,7 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -520,7 +539,7 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -544,7 +563,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -565,7 +584,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -590,7 +609,7 @@ func getPostsForTag(tag string, userId int64, isPopular bool, days int32, querie
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -612,7 +631,7 @@ func getPostsForTag(tag string, userId int64, isPopular bool, days int32, querie
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}
@@ -633,13 +652,14 @@ func getPictureMeta(url sql.NullString, width sql.NullInt64, height sql.NullInt6
 	}
 }
 
-func getVote(isUpVote sql.NullBool, voteType gen.NullVoteType) *models.Vote {
+func getVote(isUpVote sql.NullBool, voteType gen.NullVoteType, voteDeleted sql.NullBool) *models.Vote {
 	if !isUpVote.Valid {
 		return nil
 	}
 	return &models.Vote{
-		IsUpVote: isUpVote.Bool,
-		VoteType: models.VoteType(voteType.VoteType),
+		IsUpVote:  isUpVote.Bool,
+		VoteType:  models.VoteType(voteType.VoteType),
+		IsDeleted: voteDeleted.Bool,
 	}
 }
 
@@ -652,6 +672,21 @@ func getPictureMetaFromModel(picture gen.Picture) *models.PictureMeta {
 		Width:  picture.Width,
 		Height: picture.Height,
 		Id:     picture.ID,
+	}
+}
+
+func getVideoMetaFromModel(video gen.Video) *models.VideoMeta {
+	if video.ID == 0 {
+		return nil
+	}
+	return &models.VideoMeta{
+		Id:        video.ID,
+		StreamUrl: video.StreamUrl.String,
+		Duration:  video.Duration.Float64,
+		Thumbnail: video.Thumbnail.String,
+		Height:    int64(video.Height.Int32),
+		Width:     int64(video.Width.Int32),
+		Status:    models.VideoStatus(video.ProcessState.ProcessState),
 	}
 }
 
@@ -675,8 +710,29 @@ func getPicturesForPost(postId int64, queries *gen.Queries, c *fiber.Ctx) ([]*mo
 	return slice, nil
 }
 
-func getPost(postView gen.PostsView, isUpvote sql.NullBool, voteType gen.NullVoteType, queries *gen.Queries, c *fiber.Ctx) (*models.Post, error) {
+func getVideosForPost(postId int64, queries *gen.Queries, c *fiber.Ctx) ([]*models.VideoMeta, error) {
+	res, err := queries.GetVideosForPost(c.Context(), sql.NullInt64{
+		Int64: postId,
+		Valid: true,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			var slice []*models.VideoMeta
+			return slice, nil
+		}
+		log.Error().Err(err).Msg("Error getting pictures from db")
+		return nil, c.SendStatus(fiber.StatusInternalServerError)
+	}
+	var slice []*models.VideoMeta
+	for _, p := range res {
+		slice = append(slice, getVideoMetaFromModel(p))
+	}
+	return slice, nil
+}
+
+func getPost(postView gen.PostsView, isUpvote sql.NullBool, voteType gen.NullVoteType, voteDeleted sql.NullBool, queries *gen.Queries, c *fiber.Ctx) (*models.Post, error) {
 	pictures, err := getPicturesForPost(postView.ID, queries, c)
+	videos, err := getVideosForPost(postView.ID, queries, c)
 	if err != nil {
 		return nil, err
 	}
@@ -694,8 +750,9 @@ func getPost(postView gen.PostsView, isUpvote sql.NullBool, voteType gen.NullVot
 		PosterPicture: getPictureMeta(postView.UserPicUrl, postView.UserPicWidth, postView.UserPicHeight, postView.UserPicID.Int64),
 		SpacePicture:  getPictureMeta(postView.SpaceSmallPicUrl, postView.SpaceSmallPicWidth, postView.SpaceSmallPicHeight, postView.SpaceSmallPicID.Int64),
 		PostPictures:  pictures,
+		PostVideos:    videos,
 		Created:       postView.Created.Time,
-		Vote:          getVote(isUpvote, voteType),
+		Vote:          getVote(isUpvote, voteType, voteDeleted),
 		SpaceParentId: postView.ParentID,
 		SpaceName:     postView.SpaceName,
 		CommentsCount: postView.CommentCount,

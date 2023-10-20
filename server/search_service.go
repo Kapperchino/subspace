@@ -101,7 +101,7 @@ func searchPosts(term string, userId int64, isPopular bool, days int32, queries 
 		}
 		var list []models.Post
 		for _, post := range res {
-			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+			postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +123,7 @@ func searchPosts(term string, userId int64, isPopular bool, days int32, queries 
 	}
 	var list []models.Post
 	for _, post := range res {
-		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, queries, c)
+		postModel, err := getPost(post.PostsView, post.IsUpVote, post.VoteType, post.IsDeleted, queries, c)
 		if err != nil {
 			return nil, err
 		}

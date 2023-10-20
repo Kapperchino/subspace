@@ -128,7 +128,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	}
 	var list []models.Comment
 	for _, comment := range res {
-		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
+		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType, comment.IsDeleted))
 	}
 	return c.JSON(list)
 }
@@ -149,7 +149,7 @@ func getCommentsForPost(postId int, sort string, days int, userId int, queries *
 		}
 		var list []models.Comment
 		for _, comment := range res {
-			list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
+			list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType, comment.IsDeleted))
 		}
 		return c.JSON(list)
 	}
@@ -167,12 +167,12 @@ func getCommentsForPost(postId int, sort string, days int, userId int, queries *
 	}
 	var list []models.Comment
 	for _, comment := range res {
-		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType))
+		list = append(list, getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType, comment.IsDeleted))
 	}
 	return c.JSON(list)
 }
 
-func getComment(view gen.CommentsView, isUpVote sql.NullBool, voteType gen.NullVoteType) models.Comment {
+func getComment(view gen.CommentsView, isUpVote sql.NullBool, voteType gen.NullVoteType, voteIsDeleted sql.NullBool) models.Comment {
 	return models.Comment{
 		Id:            view.ID,
 		PosterId:      view.PosterID,
@@ -185,7 +185,7 @@ func getComment(view gen.CommentsView, isUpVote sql.NullBool, voteType gen.NullV
 		DownVotes:     view.DownVotes,
 		Created:       view.Created.Time,
 		PosterPicture: getPictureMeta(view.UserPicUrl, view.UserPicWidth, view.UserPicHeight, view.UserPicID.Int64),
-		Vote:          getVote(isUpVote, voteType),
+		Vote:          getVote(isUpVote, voteType, voteIsDeleted),
 	}
 }
 

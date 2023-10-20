@@ -50,6 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to objectStore")
 	}
+	videoClient, err := util.NewCloudFlareClient(config.BucketAccountId, config.CloudflareApiKey, config.Email)
 	userService := server.UserService{
 		DB:         db,
 		Config:     config,
@@ -109,6 +110,13 @@ func main() {
 		DB:         db,
 		Config:     config,
 		Validation: validation,
+	}
+
+	videoService := server.VideoService{
+		DB:               db,
+		Config:           config,
+		Validation:       validation,
+		CloudFlareClient: videoClient,
 	}
 
 	app.Use(cors.New())
@@ -199,6 +207,9 @@ func main() {
 
 	//tags
 	app.Get("/tags", tagService.GetPopularTags)
+
+	//videos
+	app.Post("/videos", videoService.ProcessVideo)
 
 	app.Listen(":" + strconv.Itoa(config.Port))
 }

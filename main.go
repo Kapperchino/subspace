@@ -24,6 +24,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
+		Network:     fiber.NetworkTCP,
 	})
 	validation := util.NewValidation()
 	validation.Validate.RegisterTagNameFunc(func(field reflect.StructField) string {

@@ -707,6 +707,9 @@ func getPicturesForPost(postId int64, queries *gen.Queries, c *fiber.Ctx) ([]*mo
 	for _, p := range res {
 		slice = append(slice, getPictureMetaFromModel(p))
 	}
+	if len(slice) == 0 {
+		return nil, nil
+	}
 	return slice, nil
 }
 

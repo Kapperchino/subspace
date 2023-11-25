@@ -127,6 +127,42 @@ func main() {
 	// Login route
 	app.Post("/auth/login", userService.Login)
 
+	// User page
+	app.Get("/users/:id", userService.GetUserById)
+
+	// Spaces
+	app.Get("/spaces/", spaceService.GetSpaces)
+
+	app.Get("/spaces/sort/", spaceService.GetSpacesSorted)
+
+	app.Get("/spaces/:id", spaceService.GetSpaceById)
+
+	// Posts
+	app.Get("/posts/:id", postService.GetPostById)
+
+	app.Get("/posts/spaces/:id", postService.GetPosts)
+
+	app.Get("/posts/", postService.GetPostsByName)
+
+	app.Get("/posts/tags/:name", postService.GetPostsForTag)
+
+	app.Get("/posts/users/:id", postService.GetPostsForUser)
+
+	// Comments
+	app.Get("/comments/:id", commentService.GetCommentById)
+
+	app.Get("/comments/", commentService.GetComments)
+
+	//search
+	app.Get("/search/spaces/", searchService.SearchSpace)
+
+	app.Get("/search/posts/", searchService.SearchPosts)
+
+	app.Get("/search/users/", userService.SearchUsers)
+
+	//tags
+	app.Get("/tags", tagService.GetPopularTags)
+
 	// JWT Middleware
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{Key: []byte(config.JWTSecret)},
@@ -134,8 +170,6 @@ func main() {
 
 	// Restricted Routes
 	//user
-	app.Get("/users/:id", userService.GetUserById)
-
 	app.Put("/users/:id", userService.UpdateUserBio)
 
 	app.Put("/users/:id/picture", userService.UpdatePicture)
@@ -143,28 +177,12 @@ func main() {
 	//spaces
 	app.Post("/spaces", spaceService.CreateSpace)
 
-	app.Get("/spaces/", spaceService.GetSpaces)
-
-	app.Get("/spaces/sort/", spaceService.GetSpacesSorted)
-
-	app.Get("/spaces/:id", spaceService.GetSpaceById)
-
 	app.Get("/spaces/users/:id", spaceService.GetSpacesForUser)
 
 	//posts
 	app.Post("/posts", postService.CreatePost)
 
-	app.Get("/posts/:id", postService.GetPostById)
-
-	app.Get("/posts/spaces/:id", postService.GetPosts)
-
 	app.Get("/posts/users/:id/subscriptions", postService.GetPostsForSubscription)
-
-	app.Get("/posts/", postService.GetPostsByName)
-
-	app.Get("/posts/tags/:name", postService.GetPostsForTag)
-
-	app.Get("/posts/users/:id", postService.GetPostsForUser)
 
 	//votes
 	app.Post("/votes", voteService.CreateVote)
@@ -178,23 +196,12 @@ func main() {
 	//comments
 	app.Post("/comments", commentService.CreateComment)
 
-	app.Get("/comments/:id", commentService.GetCommentById)
-
-	app.Get("/comments/", commentService.GetComments)
-
 	//subscription
 	app.Put("/subscriptions/", subscriptionService.CreateSubscription)
 
 	app.Get("/subscriptions/users/:id", subscriptionService.GetSubscriptionsForUser)
 
 	app.Delete("/subscriptions/", subscriptionService.DeleteSubscription)
-
-	//search
-	app.Get("/search/spaces/", searchService.SearchSpace)
-
-	app.Get("/search/posts/", searchService.SearchPosts)
-
-	app.Get("/search/users/", userService.SearchUsers)
 
 	//device
 	app.Put("/devices", deviceService.UpdateRegistration)
@@ -205,9 +212,6 @@ func main() {
 	app.Put("/files", fileService.UploadFile)
 
 	app.Get("/files/:id", fileService.GetFile)
-
-	//tags
-	app.Get("/tags", tagService.GetPopularTags)
 
 	//videos
 	app.Post("/videos", videoService.ProcessVideo)

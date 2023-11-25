@@ -57,7 +57,7 @@ func (d *FileService) uploadVideo(req *models.FileUploadRequest, queries *gen.Qu
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	content := "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+	content := "https://subspaceimg.com/" + fileName
 	res, err := queries.CreateVideo(c.Context(), gen.CreateVideoParams{
 		Url:          content,
 		ProcessState: gen.NullProcessState{ProcessState: gen.ProcessStateOngoing},
@@ -98,7 +98,7 @@ func (d *FileService) uploadPicture(req *models.FileUploadRequest, queries *gen.
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	if req.PictureMeta != nil {
-		content := "https://pub-cab547f3a0034c6083d1d10ab8298a3f.r2.dev/" + fileName
+		content := "https://subspaceimg.com/" + fileName
 		res, err := queries.CreatePicture(c.Context(), gen.CreatePictureParams{
 			Url:    content,
 			Width:  req.PictureMeta.Width,

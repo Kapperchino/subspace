@@ -30,11 +30,34 @@ func (u *SearchService) getValidation() *util.Validation {
 
 func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 	search := c.Query("term")
+	prefix := c.Query("prefix")
 	// get all spaces
-	if search == "" {
+	if search == "" && prefix == "" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
+	if prefix != "" {
+		res, err := queries.SpacePrefixSearch(c.Context(), prefix)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.Send(nil)
+			}
+			log.Error().Err(err).Msg("Error while searching db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.SpacePrefixRes
+		for _, spaceView := range res {
+			space := spaceView.SpacesView
+			list = append(list, models.SpacePrefixRes{
+				ID:           space.ID,
+				ParentID:     space.ParentID,
+				Name:         space.Name,
+				SmallPicture: getPictureMeta(space.SpaceSmallPicUrl, space.SpaceSmallPicWidth, space.SpaceSmallPicHeight, space.SpaceSmallPictureID.Int64),
+				SubCount:     space.SubCount,
+			})
+		}
+		return c.JSON(list)
+	}
 	res, err := queries.SearchSpace(c.Context(), search)
 	if err != nil {
 		if err == sql.ErrNoRows {

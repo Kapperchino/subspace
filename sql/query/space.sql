@@ -1,7 +1,8 @@
 -- name: GetSpace :one
 SELECT *
 FROM spaces_view s
-WHERE s.id = $1 LIMIT 1;
+WHERE s.id = $1
+LIMIT 1;
 
 -- name: GetSpacesOfParent :many
 SELECT *
@@ -12,7 +13,8 @@ WHERE s.parent_id = $1;
 SELECT *
 FROM spaces_view s
 WHERE s.name = $1
-  AND s.parent_id = $2 LIMIT 1;
+  AND s.parent_id = $2
+LIMIT 1;
 
 -- name: GetUserSpaces :many
 SELECT sp.*
@@ -41,10 +43,17 @@ ORDER BY ts_rank(ts, plainto_tsquery('english', $1)) DESC;
 
 -- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, small_picture_id, background_picture_id)
-VALUES ($1, $2, $3, $4, $5) RETURNING *;
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *;
 
 -- name: DeleteSpace :exec
 DELETE
 FROM spaces
 WHERE id = $1;
+
+-- name: SpacePrefixSearch :many
+select sqlc.embed(s), similarity(name, $1) as sml
+from spaces_view s
+order by sml desc
+limit 10;
 

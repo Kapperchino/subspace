@@ -12,7 +12,8 @@ import (
 
 const createSpace = `-- name: CreateSpace :one
 INSERT INTO spaces (name, description, parent_id, small_picture_id, background_picture_id)
-VALUES ($1, $2, $3, $4, $5) RETURNING id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id
 `
 
 type CreateSpaceParams struct {
@@ -158,7 +159,8 @@ func (q *Queries) GetPopularSpaces(ctx context.Context) ([]SpacesView, error) {
 const getSpace = `-- name: GetSpace :one
 SELECT id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id, space_small_pic_url, space_small_pic_width, space_small_pic_height, space_small_picture_id, space_background_picture_url, space_background_picture_width, space_background_picture_height, space_background_picture_id, sub_count
 FROM spaces_view s
-WHERE s.id = $1 LIMIT 1
+WHERE s.id = $1
+LIMIT 1
 `
 
 func (q *Queries) GetSpace(ctx context.Context, id int64) (SpacesView, error) {
@@ -191,7 +193,8 @@ const getSpaceByName = `-- name: GetSpaceByName :one
 SELECT id, parent_id, name, description, is_deleted, created, ts, small_picture_id, background_picture_id, space_small_pic_url, space_small_pic_width, space_small_pic_height, space_small_picture_id, space_background_picture_url, space_background_picture_width, space_background_picture_height, space_background_picture_id, sub_count
 FROM spaces_view s
 WHERE s.name = $1
-  AND s.parent_id = $2 LIMIT 1
+  AND s.parent_id = $2
+LIMIT 1
 `
 
 type GetSpaceByNameParams struct {
@@ -358,6 +361,61 @@ func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Spa
 			&i.SpaceBackgroundPictureHeight,
 			&i.SpaceBackgroundPictureID,
 			&i.SubCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const spacePrefixSearch = `-- name: SpacePrefixSearch :many
+select s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, s.space_small_pic_url, s.space_small_pic_width, s.space_small_pic_height, s.space_small_picture_id, s.space_background_picture_url, s.space_background_picture_width, s.space_background_picture_height, s.space_background_picture_id, s.sub_count, similarity(name, $1) as sml
+from spaces_view s
+order by sml desc
+limit 10
+`
+
+type SpacePrefixSearchRow struct {
+	SpacesView SpacesView
+	Sml        float32
+}
+
+func (q *Queries) SpacePrefixSearch(ctx context.Context, similarity string) ([]SpacePrefixSearchRow, error) {
+	rows, err := q.db.QueryContext(ctx, spacePrefixSearch, similarity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SpacePrefixSearchRow
+	for rows.Next() {
+		var i SpacePrefixSearchRow
+		if err := rows.Scan(
+			&i.SpacesView.ID,
+			&i.SpacesView.ParentID,
+			&i.SpacesView.Name,
+			&i.SpacesView.Description,
+			&i.SpacesView.IsDeleted,
+			&i.SpacesView.Created,
+			&i.SpacesView.Ts,
+			&i.SpacesView.SmallPictureID,
+			&i.SpacesView.BackgroundPictureID,
+			&i.SpacesView.SpaceSmallPicUrl,
+			&i.SpacesView.SpaceSmallPicWidth,
+			&i.SpacesView.SpaceSmallPicHeight,
+			&i.SpacesView.SpaceSmallPictureID,
+			&i.SpacesView.SpaceBackgroundPictureUrl,
+			&i.SpacesView.SpaceBackgroundPictureWidth,
+			&i.SpacesView.SpaceBackgroundPictureHeight,
+			&i.SpacesView.SpaceBackgroundPictureID,
+			&i.SpacesView.SubCount,
+			&i.Sml,
 		); err != nil {
 			return nil, err
 		}

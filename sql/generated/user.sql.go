@@ -162,6 +162,62 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFr
 	return i, err
 }
 
+const searchPrefixUsers = `-- name: SearchPrefixUsers :many
+select u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height, similarity(u.address, $1) as sml
+from users u
+         left join pictures p on u.picture_id = p.id
+order by sml desc
+limit 10
+`
+
+type SearchPrefixUsersRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+	Sml    float32
+}
+
+func (q *Queries) SearchPrefixUsers(ctx context.Context, similarity string) ([]SearchPrefixUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPrefixUsers, similarity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchPrefixUsersRow
+	for rows.Next() {
+		var i SearchPrefixUsersRow
+		if err := rows.Scan(
+			&i.User.ID,
+			&i.User.Password,
+			&i.User.Email,
+			&i.User.DisplayName,
+			&i.User.Bio,
+			&i.User.IsDeleted,
+			&i.User.Created,
+			&i.User.PictureID,
+			&i.User.Address,
+			&i.User.Ts,
+			&i.ID,
+			&i.Url,
+			&i.Width,
+			&i.Height,
+			&i.Sml,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchUsers = `-- name: SearchUsers :many
 SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
 from users u

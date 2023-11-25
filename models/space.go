@@ -18,6 +18,14 @@ type Space struct {
 	SubCount          int64        `json:"sub_count"`
 }
 
+type SpacePrefixRes struct {
+	ID           int64        `json:"id"`
+	ParentID     int64        `json:"parent_id"`
+	Name         string       `json:"name"`
+	SmallPicture *PictureMeta `json:"small_picture"`
+	SubCount     int64        `json:"sub_count"`
+}
+
 type SpaceCreationRes struct {
 	ID                  int64  `json:"id"`
 	ParentID            int64  `json:"parent_id"`

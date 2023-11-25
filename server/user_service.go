@@ -287,10 +287,32 @@ func (u *UserService) UpdatePicture(c *fiber.Ctx) error {
 
 func (u *UserService) SearchUsers(c *fiber.Ctx) error {
 	term := c.Query("term", "")
-	if term == "" {
+	prefix := c.Query("prefix", "")
+	if term == "" && prefix == "" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
+	if prefix != "" {
+		res, err := queries.SearchPrefixUsers(c.Context(), prefix)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return c.Send(nil)
+			}
+			log.Error().Err(err).Msg("Error while searching for user")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var output []models.UserInfo
+		for _, user := range res {
+			output = append(output, models.UserInfo{
+				UserID:      user.User.ID,
+				DisplayName: user.User.DisplayName,
+				UserAddress: user.User.Address.String,
+				PictureMeta: getPictureMeta(user.Url, user.Width, user.Height, user.ID.Int64),
+				Bio:         user.User.Bio.String,
+			})
+		}
+		return c.JSON(output)
+	}
 	res, err := queries.SearchUsers(c.Context(), term)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

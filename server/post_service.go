@@ -249,7 +249,7 @@ func (u *PostService) GetPostsForTag(c *fiber.Ctx) error {
 	if sort != "latest" && sort != "popular" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	if days > 365 {
+	if days > 99999 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
@@ -274,7 +274,7 @@ func (u *PostService) GetPostsByName(c *fiber.Ctx) error {
 	if sort != "latest" && sort != "popular" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	if days > 365 {
+	if days > 99999 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
@@ -298,7 +298,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	if sort != "latest" && sort != "popular" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	if days > 365 {
+	if days > 99999 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	if spaceId == -1 {
@@ -324,7 +324,7 @@ func (u *PostService) GetPostsForSubscription(c *fiber.Ctx) error {
 	if sort != "latest" && sort != "popular" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	if days > 365 {
+	if days > 99999 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
@@ -454,7 +454,7 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 	if sort != "latest" && sort != "popular" {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	if days > 365 {
+	if days > 99999 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())

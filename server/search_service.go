@@ -87,13 +87,14 @@ func (u *SearchService) SearchPosts(c *fiber.Ctx) error {
 	days := c.QueryInt("days", 7)
 	isTag := c.QueryBool("isTag", false)
 	sort := c.Query("sort", "latest")
+	start := c.QueryInt("start", 0)
 	// get all spaces
 	if search == "" || userId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
 	if isTag {
-		list, err := getPostsForTag(search, int64(userId), sort == "popular", int32(days), queries, c)
+		list, err := getPostsForTag(search, int64(userId), sort == "popular", int32(days), queries, c, int32(start))
 		if err != nil {
 			log.Error().Err(err).Msg("Error getting posts for tag")
 			return err

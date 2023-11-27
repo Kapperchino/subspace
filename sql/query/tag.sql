@@ -24,7 +24,8 @@ FROM posts_view p
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
-ORDER BY up_votes DESC;
+ORDER BY up_votes DESC
+LIMIT 10 OFFSET $4;
 
 -- name: GetPostsWithTagsLatest :many
 SELECT sqlc.embed(p), v.*
@@ -36,7 +37,8 @@ FROM posts_view p
 WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
-ORDER BY p.created DESC;
+ORDER BY p.created DESC
+LIMIT 10 OFFSET $4;
 
 -- name: GetPopularTags :many
 select t.name, COUNT(DISTINCT tr.post_id) AS count
@@ -46,4 +48,4 @@ from tags_relations tr
 WHERE pv.id != 1
   AND current_timestamp - pv.created < make_interval(days => $1)
 GROUP BY tr.tag_id, t.name
-ORDER BY COUNT(tr.tag_id) DESC ;
+ORDER BY COUNT(tr.tag_id) DESC;

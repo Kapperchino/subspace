@@ -145,11 +145,13 @@ from posts_view p
 WHERE p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForHomeLatestParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForHomeLatestRow struct {
@@ -163,7 +165,7 @@ type GetPostsForHomeLatestRow struct {
 }
 
 func (q *Queries) GetPostsForHomeLatest(ctx context.Context, arg GetPostsForHomeLatestParams) ([]GetPostsForHomeLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForHomeLatest, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForHomeLatest, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -226,11 +228,13 @@ WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForHomePopularParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForHomePopularRow struct {
@@ -244,7 +248,7 @@ type GetPostsForHomePopularRow struct {
 }
 
 func (q *Queries) GetPostsForHomePopular(ctx context.Context, arg GetPostsForHomePopularParams) ([]GetPostsForHomePopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForHomePopular, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForHomePopular, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -306,12 +310,14 @@ WHERE p.space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $4
 `
 
 type GetPostsForSpaceLatestParams struct {
 	SpaceID sql.NullInt64
 	UserID  int64
 	Days    int32
+	Offset  int32
 }
 
 type GetPostsForSpaceLatestRow struct {
@@ -325,7 +331,12 @@ type GetPostsForSpaceLatestRow struct {
 }
 
 func (q *Queries) GetPostsForSpaceLatest(ctx context.Context, arg GetPostsForSpaceLatestParams) ([]GetPostsForSpaceLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatest, arg.SpaceID, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForSpaceLatest,
+		arg.SpaceID,
+		arg.UserID,
+		arg.Days,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -388,6 +399,7 @@ WHERE p.space_name = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $4)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $5
 `
 
 type GetPostsForSpaceLatestByNameParams struct {
@@ -395,6 +407,7 @@ type GetPostsForSpaceLatestByNameParams struct {
 	ParentID  int64
 	UserID    int64
 	Days      int32
+	Offset    int32
 }
 
 type GetPostsForSpaceLatestByNameRow struct {
@@ -413,6 +426,7 @@ func (q *Queries) GetPostsForSpaceLatestByName(ctx context.Context, arg GetPosts
 		arg.ParentID,
 		arg.UserID,
 		arg.Days,
+		arg.Offset,
 	)
 	if err != nil {
 		return nil, err
@@ -477,12 +491,14 @@ WHERE p.space_id = $1
   AND current_timestamp - p.created
     < make_interval(days => $3)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $4
 `
 
 type GetPostsForSpacePopularParams struct {
 	SpaceID sql.NullInt64
 	UserID  int64
 	Days    int32
+	Offset  int32
 }
 
 type GetPostsForSpacePopularRow struct {
@@ -496,7 +512,12 @@ type GetPostsForSpacePopularRow struct {
 }
 
 func (q *Queries) GetPostsForSpacePopular(ctx context.Context, arg GetPostsForSpacePopularParams) ([]GetPostsForSpacePopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopular, arg.SpaceID, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForSpacePopular,
+		arg.SpaceID,
+		arg.UserID,
+		arg.Days,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -559,6 +580,7 @@ WHERE p.space_name = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $4)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $5
 `
 
 type GetPostsForSpacePopularByNameParams struct {
@@ -566,6 +588,7 @@ type GetPostsForSpacePopularByNameParams struct {
 	ParentID  int64
 	UserID    int64
 	Days      int32
+	Offset    int32
 }
 
 type GetPostsForSpacePopularByNameRow struct {
@@ -584,6 +607,7 @@ func (q *Queries) GetPostsForSpacePopularByName(ctx context.Context, arg GetPost
 		arg.ParentID,
 		arg.UserID,
 		arg.Days,
+		arg.Offset,
 	)
 	if err != nil {
 		return nil, err
@@ -647,11 +671,13 @@ WHERE p.poster_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForUserLatestParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForUserLatestRow struct {
@@ -665,7 +691,7 @@ type GetPostsForUserLatestRow struct {
 }
 
 func (q *Queries) GetPostsForUserLatest(ctx context.Context, arg GetPostsForUserLatestParams) ([]GetPostsForUserLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUserLatest, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForUserLatest, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -728,11 +754,13 @@ WHERE p.poster_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForUserPopularParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForUserPopularRow struct {
@@ -746,7 +774,7 @@ type GetPostsForUserPopularRow struct {
 }
 
 func (q *Queries) GetPostsForUserPopular(ctx context.Context, arg GetPostsForUserPopularParams) ([]GetPostsForUserPopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUserPopular, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForUserPopular, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -810,11 +838,13 @@ WHERE p.id != 1
   AND p.space_id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForUserSubscriptionLatestParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForUserSubscriptionLatestRow struct {
@@ -828,7 +858,7 @@ type GetPostsForUserSubscriptionLatestRow struct {
 }
 
 func (q *Queries) GetPostsForUserSubscriptionLatest(ctx context.Context, arg GetPostsForUserSubscriptionLatestParams) ([]GetPostsForUserSubscriptionLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUserSubscriptionLatest, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForUserSubscriptionLatest, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -892,11 +922,13 @@ WHERE p.id != 1
   AND p.space_id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $3
 `
 
 type GetPostsForUserSubscriptionPopularParams struct {
 	UserID int64
 	Days   int32
+	Offset int32
 }
 
 type GetPostsForUserSubscriptionPopularRow struct {
@@ -910,7 +942,7 @@ type GetPostsForUserSubscriptionPopularRow struct {
 }
 
 func (q *Queries) GetPostsForUserSubscriptionPopular(ctx context.Context, arg GetPostsForUserSubscriptionPopularParams) ([]GetPostsForUserSubscriptionPopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUserSubscriptionPopular, arg.UserID, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsForUserSubscriptionPopular, arg.UserID, arg.Days, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -972,12 +1004,14 @@ WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, p.created DESC
+LIMIT 10 OFFSET $4
 `
 
 type SearchPostLatestParams struct {
 	UserID         int64
 	Days           int32
 	PlaintoTsquery string
+	Offset         int32
 }
 
 type SearchPostLatestRow struct {
@@ -991,7 +1025,12 @@ type SearchPostLatestRow struct {
 }
 
 func (q *Queries) SearchPostLatest(ctx context.Context, arg SearchPostLatestParams) ([]SearchPostLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchPostLatest, arg.UserID, arg.Days, arg.PlaintoTsquery)
+	rows, err := q.db.QueryContext(ctx, searchPostLatest,
+		arg.UserID,
+		arg.Days,
+		arg.PlaintoTsquery,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1053,12 +1092,14 @@ WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
 ORDER BY ts_rank(p.ts, plainto_tsquery('english', $3)) DESC, up_votes DESC
+LIMIT 10 OFFSET $4
 `
 
 type SearchPostPopularParams struct {
 	UserID         int64
 	Days           int32
 	PlaintoTsquery string
+	Offset         int32
 }
 
 type SearchPostPopularRow struct {
@@ -1072,7 +1113,12 @@ type SearchPostPopularRow struct {
 }
 
 func (q *Queries) SearchPostPopular(ctx context.Context, arg SearchPostPopularParams) ([]SearchPostPopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchPostPopular, arg.UserID, arg.Days, arg.PlaintoTsquery)
+	rows, err := q.db.QueryContext(ctx, searchPostPopular,
+		arg.UserID,
+		arg.Days,
+		arg.PlaintoTsquery,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

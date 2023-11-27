@@ -254,7 +254,7 @@ func (u *PostService) GetPostsForTag(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 
-	list, err := getPostsForTag(tag, int64(userId), sort == "popular", int32(days), queries, c)
+	list, err := getPostsForTag(tag, int64(userId), sort == "popular", int32(days), queries, c, int32(days))
 	if err != nil {
 		return err
 	}
@@ -267,6 +267,7 @@ func (u *PostService) GetPostsByName(c *fiber.Ctx) error {
 	userId := c.QueryInt("userId", -1)
 	sort := c.Query("sort", "latest")
 	days := c.QueryInt("days", 7)
+	start := c.QueryInt("start", 0)
 	if spaceName == "" || userId == -1 || parentId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -278,7 +279,7 @@ func (u *PostService) GetPostsByName(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 
-	list, err := u.getPostsForSpaceByName(int64(userId), int64(parentId), spaceName, sort == "popular", int32(days), queries, c)
+	list, err := u.getPostsForSpaceByName(int64(userId), int64(parentId), spaceName, sort == "popular", int32(days), queries, c, int32(start))
 	if err != nil {
 		return err
 	}
@@ -290,6 +291,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	userId := c.QueryInt("userId", -1)
 	sort := c.Query("sort", "latest")
 	days := c.QueryInt("days", 7)
+	start := c.QueryInt("start", 0)
 	if spaceId == -1 || userId == -1 {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -304,7 +306,7 @@ func (u *PostService) GetPosts(c *fiber.Ctx) error {
 	}
 	queries := gen.New(u.getDB())
 
-	list, err := u.getPosts(int64(userId), int64(spaceId), sort == "popular", int32(days), queries, c)
+	list, err := u.getPosts(int64(userId), int64(spaceId), sort == "popular", int32(days), queries, c, start)
 	if err != nil {
 		return err
 	}
@@ -315,6 +317,7 @@ func (u *PostService) GetPostsForSubscription(c *fiber.Ctx) error {
 	userId, err := c.ParamsInt("id", -1)
 	sort := c.Query("sort", "latest")
 	days := c.QueryInt("days", 7)
+	start := c.QueryInt("start", 0)
 	if userId == -1 || err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -325,16 +328,16 @@ func (u *PostService) GetPostsForSubscription(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
-	list, err := u.getPostsForUserSubscription(int64(userId), sort == "popular", int32(days), queries, c)
+	list, err := u.getPostsForUserSubscription(int64(userId), sort == "popular", int32(days), queries, c, int32(start))
 	if err != nil {
 		return err
 	}
 	return c.JSON(list)
 }
 
-func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int) ([]models.Post, error) {
 	if spaceId == 1 {
-		return u.getPostsForHome(userId, isPopular, days, queries, c)
+		return u.getPostsForHome(userId, isPopular, days, queries, c, int32(offset))
 	}
 	if !isPopular {
 		res, err := queries.GetPostsForSpaceLatest(c.Context(), gen.GetPostsForSpaceLatestParams{
@@ -344,6 +347,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 			},
 			Days:   days,
 			UserID: userId,
+			Offset: int32(offset),
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -369,6 +373,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 		},
 		UserID: userId,
 		Days:   days,
+		Offset: int32(offset),
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -388,7 +393,7 @@ func (u *PostService) getPosts(userId int64, spaceId int64, isPopular bool, days
 	return list, nil
 }
 
-func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, spaceName string, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, spaceName string, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int32) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForSpaceLatestByName(c.Context(), gen.GetPostsForSpaceLatestByNameParams{
 			SpaceName: spaceName,
@@ -418,6 +423,7 @@ func (u *PostService) getPostsForSpaceByName(userId int64, parentId int64, space
 		ParentID:  parentId,
 		UserID:    userId,
 		Days:      days,
+		Offset:    offset,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -441,6 +447,7 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 	userId, err := c.ParamsInt("id", -1)
 	sort := c.Query("sort", "latest")
 	days := c.QueryInt("days", 7)
+	start := c.QueryInt("start", 0)
 	if userId == -1 || err != nil {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
@@ -451,18 +458,19 @@ func (u *PostService) GetPostsForUser(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusBadRequest)
 	}
 	queries := gen.New(u.getDB())
-	list, err := u.getPostsForUser(int64(userId), sort == "popular", int32(days), queries, c)
+	list, err := u.getPostsForUser(int64(userId), sort == "popular", int32(days), queries, c, int32(start))
 	if err != nil {
 		return err
 	}
 	return c.JSON(list)
 }
 
-func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int32) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForUserLatest(c.Context(), gen.GetPostsForUserLatestParams{
 			Days:   days,
 			UserID: userId,
+			Offset: offset,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -503,11 +511,12 @@ func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, 
 	return list, nil
 }
 
-func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int32) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForHomeLatest(c.Context(), gen.GetPostsForHomeLatestParams{
 			Days:   days,
 			UserID: userId,
+			Offset: offset,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -529,6 +538,7 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 	res, err := queries.GetPostsForHomePopular(c.Context(), gen.GetPostsForHomePopularParams{
 		UserID: userId,
 		Days:   days,
+		Offset: offset,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -548,11 +558,12 @@ func (u *PostService) getPostsForHome(userId int64, isPopular bool, days int32, 
 	return list, nil
 }
 
-func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int32) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsForUserSubscriptionLatest(c.Context(), gen.GetPostsForUserSubscriptionLatestParams{
 			Days:   days,
 			UserID: userId,
+			Offset: offset,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -574,6 +585,7 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	res, err := queries.GetPostsForUserSubscriptionPopular(c.Context(), gen.GetPostsForUserSubscriptionPopularParams{
 		UserID: userId,
 		Days:   days,
+		Offset: offset,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -593,12 +605,13 @@ func (u *PostService) getPostsForUserSubscription(userId int64, isPopular bool, 
 	return list, nil
 }
 
-func getPostsForTag(tag string, userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx) ([]models.Post, error) {
+func getPostsForTag(tag string, userId int64, isPopular bool, days int32, queries *gen.Queries, c *fiber.Ctx, offset int32) ([]models.Post, error) {
 	if !isPopular {
 		res, err := queries.GetPostsWithTagsLatest(c.Context(), gen.GetPostsWithTagsLatestParams{
 			Days:   days,
 			UserID: userId,
 			Name:   tag,
+			Offset: offset,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -621,6 +634,7 @@ func getPostsForTag(tag string, userId int64, isPopular bool, days int32, querie
 		Days:   days,
 		UserID: userId,
 		Name:   tag,
+		Offset: offset,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

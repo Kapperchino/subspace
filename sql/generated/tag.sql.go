@@ -97,12 +97,14 @@ WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY p.created DESC
+LIMIT 10 OFFSET $4
 `
 
 type GetPostsWithTagsLatestParams struct {
 	UserID int64
 	Name   string
 	Days   int32
+	Offset int32
 }
 
 type GetPostsWithTagsLatestRow struct {
@@ -116,7 +118,12 @@ type GetPostsWithTagsLatestRow struct {
 }
 
 func (q *Queries) GetPostsWithTagsLatest(ctx context.Context, arg GetPostsWithTagsLatestParams) ([]GetPostsWithTagsLatestRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsWithTagsLatest, arg.UserID, arg.Name, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsWithTagsLatest,
+		arg.UserID,
+		arg.Name,
+		arg.Days,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -180,12 +187,14 @@ WHERE p.id != 1
   AND t1.name = $2
   AND current_timestamp - p.created < make_interval(days => $3)
 ORDER BY up_votes DESC
+LIMIT 10 OFFSET $4
 `
 
 type GetPostsWithTagsPopularParams struct {
 	UserID int64
 	Name   string
 	Days   int32
+	Offset int32
 }
 
 type GetPostsWithTagsPopularRow struct {
@@ -199,7 +208,12 @@ type GetPostsWithTagsPopularRow struct {
 }
 
 func (q *Queries) GetPostsWithTagsPopular(ctx context.Context, arg GetPostsWithTagsPopularParams) ([]GetPostsWithTagsPopularRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsWithTagsPopular, arg.UserID, arg.Name, arg.Days)
+	rows, err := q.db.QueryContext(ctx, getPostsWithTagsPopular,
+		arg.UserID,
+		arg.Name,
+		arg.Days,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -227,7 +227,7 @@ from posts_view p
 WHERE p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $2)
-ORDER BY up_votes DESC
+ORDER BY up_votes DESC, p.id DESC
 LIMIT 10 OFFSET $3
 `
 
@@ -490,7 +490,7 @@ WHERE p.space_id = $1
   AND p.id != 1
   AND current_timestamp - p.created
     < make_interval(days => $3)
-ORDER BY up_votes DESC
+ORDER BY up_votes DESC, p.id DESC
 LIMIT 10 OFFSET $4
 `
 
@@ -579,7 +579,7 @@ WHERE p.space_name = $1
   AND p.parent_id = $2
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $4)
-ORDER BY up_votes DESC
+ORDER BY up_votes DESC, p.id DESC
 LIMIT 10 OFFSET $5
 `
 
@@ -753,7 +753,7 @@ from posts_view p
 WHERE p.poster_id = $1
   AND p.id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
-ORDER BY up_votes DESC
+ORDER BY up_votes DESC, p.id DESC
 LIMIT 10 OFFSET $3
 `
 
@@ -921,7 +921,7 @@ from posts_view p
 WHERE p.id != 1
   AND p.space_id != 1
   AND current_timestamp - p.created < make_interval(days => $2)
-ORDER BY up_votes DESC
+ORDER BY up_votes DESC, p.id DESC
 LIMIT 10 OFFSET $3
 `
 

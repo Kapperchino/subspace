@@ -28,6 +28,13 @@ FROM users u
 WHERE u.address = $1
 LIMIT 1;
 
+-- name: GetUserFromName :one
+SELECT sqlc.embed(u), p.*
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.display_name = $1
+LIMIT 1;
+
 -- name: GetUserFromEmail :one
 SELECT sqlc.embed(u), p.*
 FROM users u

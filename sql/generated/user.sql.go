@@ -162,6 +162,44 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (GetUserFr
 	return i, err
 }
 
+const getUserFromName = `-- name: GetUserFromName :one
+SELECT u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height
+FROM users u
+         left join pictures p on u.picture_id = p.id
+WHERE u.display_name = $1
+LIMIT 1
+`
+
+type GetUserFromNameRow struct {
+	User   User
+	ID     sql.NullInt64
+	Url    sql.NullString
+	Width  sql.NullInt64
+	Height sql.NullInt64
+}
+
+func (q *Queries) GetUserFromName(ctx context.Context, displayName string) (GetUserFromNameRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserFromName, displayName)
+	var i GetUserFromNameRow
+	err := row.Scan(
+		&i.User.ID,
+		&i.User.Password,
+		&i.User.Email,
+		&i.User.DisplayName,
+		&i.User.Bio,
+		&i.User.IsDeleted,
+		&i.User.Created,
+		&i.User.PictureID,
+		&i.User.Address,
+		&i.User.Ts,
+		&i.ID,
+		&i.Url,
+		&i.Width,
+		&i.Height,
+	)
+	return i, err
+}
+
 const searchPrefixUsers = `-- name: SearchPrefixUsers :many
 select u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height, similarity(u.address, $1) as sml
 from users u

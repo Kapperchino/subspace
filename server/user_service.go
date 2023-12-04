@@ -217,6 +217,50 @@ func (u *UserService) GetUserById(c *fiber.Ctx) error {
 	})
 }
 
+func (u *UserService) GetUser(c *fiber.Ctx) error {
+	address := c.Query("address", "")
+	name := c.Query("name", "")
+	if address == "" && name == "" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(u.getDB())
+	if address != "" {
+		res, err := queries.GetUserFromAddress(c.Context(), sql.NullString{
+			String: address,
+			Valid:  true,
+		})
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.Send(nil)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		return c.JSON(models.UserInfo{
+			UserID:      res.User.ID,
+			DisplayName: res.User.DisplayName,
+			Bio:         res.User.Bio.String,
+			UserAddress: res.User.Address.String,
+			PictureMeta: getPictureMeta(res.Url, res.Width, res.Height, res.ID.Int64),
+		})
+	}
+	res, err := queries.GetUserFromName(c.Context(), name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.Send(nil)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	return c.JSON(models.UserInfo{
+		UserID:      res.User.ID,
+		DisplayName: res.User.DisplayName,
+		Bio:         res.User.Bio.String,
+		UserAddress: res.User.Address.String,
+		PictureMeta: getPictureMeta(res.Url, res.Width, res.Height, res.ID.Int64),
+	})
+}
+
 func (u *UserService) UpdateUserBio(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id", -1)
 	if err != nil {

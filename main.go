@@ -130,6 +130,8 @@ func main() {
 	// User page
 	app.Get("/users/:id", userService.GetUserById)
 
+	app.Get("/users", userService.GetUser)
+
 	// Spaces
 	app.Get("/spaces/", spaceService.GetSpaces)
 

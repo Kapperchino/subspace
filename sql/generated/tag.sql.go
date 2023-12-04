@@ -278,3 +278,38 @@ func (q *Queries) GetTag(ctx context.Context, name string) (Tag, error) {
 	err := row.Scan(&i.ID, &i.Name)
 	return i, err
 }
+
+const searchPrefixTags = `-- name: SearchPrefixTags :many
+select t.id, t.name, similarity(t.name, $1) as sml
+from tags t
+order by sml desc
+limit 5
+`
+
+type SearchPrefixTagsRow struct {
+	Tag Tag
+	Sml float32
+}
+
+func (q *Queries) SearchPrefixTags(ctx context.Context, similarity string) ([]SearchPrefixTagsRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPrefixTags, similarity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchPrefixTagsRow
+	for rows.Next() {
+		var i SearchPrefixTagsRow
+		if err := rows.Scan(&i.Tag.ID, &i.Tag.Name, &i.Sml); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

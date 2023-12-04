@@ -165,6 +165,8 @@ func main() {
 	//tags
 	app.Get("/tags", tagService.GetPopularTags)
 
+	app.Get("/search/tags", tagService.SearchTags)
+
 	// JWT Middleware
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{Key: []byte(config.JWTSecret)},

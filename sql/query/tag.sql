@@ -49,3 +49,9 @@ WHERE pv.id != 1
   AND current_timestamp - pv.created < make_interval(days => $1)
 GROUP BY tr.tag_id, t.name
 ORDER BY COUNT(tr.tag_id) DESC;
+
+-- name: SearchPrefixTags :many
+select sqlc.embed(t), similarity(t.name, $1) as sml
+from tags t
+order by sml desc
+limit 5;

@@ -56,4 +56,4 @@ select sqlc.embed(u), p.*, similarity(u.address, $1) as sml
 from users u
          left join pictures p on u.picture_id = p.id
 order by sml desc
-limit 10;
+limit 5;

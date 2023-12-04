@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -40,6 +41,27 @@ func (d *TagService) GetPopularTags(c *fiber.Ctx) error {
 	var tagRes []models.Tag
 	for _, tag := range tags {
 		tagRes = append(tagRes, models.Tag{Name: tag.Name, Count: tag.Count})
+	}
+	return c.JSON(tagRes)
+}
+
+func (d *TagService) SearchTags(c *fiber.Ctx) error {
+	prefix := c.Query("prefix", "")
+	if prefix == "" {
+		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	queries := gen.New(d.getDB())
+	tags, err := queries.SearchPrefixTags(c.Context(), prefix)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var tagRes []models.TagName
+	for _, tag := range tags {
+		tagRes = append(tagRes, models.TagName{Name: tag.Tag.Name})
 	}
 	return c.JSON(tagRes)
 }

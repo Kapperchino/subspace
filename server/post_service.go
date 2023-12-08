@@ -506,6 +506,7 @@ func (u *PostService) getPostsForUser(userId int64, isPopular bool, days int32, 
 	res, err := queries.GetPostsForUserPopular(c.Context(), gen.GetPostsForUserPopularParams{
 		UserID: userId,
 		Days:   days,
+		Offset: offset,
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -7,7 +7,7 @@ import (
 
 type Config struct {
 	Debug            bool   `required:"true" default:"false"`
-	Port             int    `required:"true" default:"3000"`
+	Port             int    `required:"true" default:"80"`
 	JWTSecret        string `required:"true" default:"devSecret" split_words:"true"`
 	DatabaseUrl      string `required:"true" split_words:"true"`
 	BucketKeySecret  string `required:"true" split_words:"true"`

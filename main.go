@@ -24,7 +24,6 @@ func main() {
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
-		Network:     fiber.NetworkTCP,
 	})
 	validation := util.NewValidation()
 	validation.Validate.RegisterTagNameFunc(func(field reflect.StructField) string {
@@ -220,5 +219,5 @@ func main() {
 	//videos
 	app.Post("/videos", videoService.ProcessVideo)
 
-	app.Listen(":" + strconv.Itoa(config.Port))
+	app.Listen("0.0.0.0:" + strconv.Itoa(config.Port))
 }

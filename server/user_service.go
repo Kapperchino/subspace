@@ -62,6 +62,8 @@ func (u *UserService) CreateUser(c *fiber.Ctx) error {
 					return c.Status(fiber.StatusConflict).SendString("email")
 				} else if pgErr.ConstraintName == "users_display_name_key" {
 					return c.Status(fiber.StatusConflict).SendString("display_name")
+				} else if pgErr.ConstraintName == "user_address_unique" {
+					return c.Status(fiber.StatusConflict).SendString("user_address")
 				}
 			}
 		}

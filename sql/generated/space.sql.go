@@ -378,6 +378,7 @@ func (q *Queries) SearchSpace(ctx context.Context, plaintoTsquery string) ([]Spa
 const spacePrefixSearch = `-- name: SpacePrefixSearch :many
 select s.id, s.parent_id, s.name, s.description, s.is_deleted, s.created, s.ts, s.small_picture_id, s.background_picture_id, s.space_small_pic_url, s.space_small_pic_width, s.space_small_pic_height, s.space_small_picture_id, s.space_background_picture_url, s.space_background_picture_width, s.space_background_picture_height, s.space_background_picture_id, s.sub_count, similarity(name, $1) as sml
 from spaces_view s
+where s.id != 1
 order by sml desc
 limit 10
 `

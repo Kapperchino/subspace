@@ -54,6 +54,7 @@ WHERE id = $1;
 -- name: SpacePrefixSearch :many
 select sqlc.embed(s), similarity(name, $1) as sml
 from spaces_view s
+where s.id != 1
 order by sml desc
 limit 10;
 

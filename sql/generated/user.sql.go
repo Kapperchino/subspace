@@ -204,6 +204,7 @@ const searchPrefixUsers = `-- name: SearchPrefixUsers :many
 select u.id, u.password, u.email, u.display_name, u.bio, u.is_deleted, u.created, u.picture_id, u.address, u.ts, p.id, p.url, p.width, p.height, similarity(u.address, $1) as sml
 from users u
          left join pictures p on u.picture_id = p.id
+where u.id != 1
 order by sml desc
 limit 5
 `

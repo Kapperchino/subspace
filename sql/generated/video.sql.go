@@ -87,11 +87,11 @@ const getVideoForComment = `-- name: GetVideoForComment :many
 SELECT v.id, v.url, v.thumbnail, v.process_state, v.stream_url, v.duration, v.width, v.height
 FROM videos v
          join video_relations vr on v.id = vr.video_id
-where vr.post_id = $1
+where vr.comment_id = $1
 `
 
-func (q *Queries) GetVideoForComment(ctx context.Context, postID sql.NullInt64) ([]Video, error) {
-	rows, err := q.db.QueryContext(ctx, getVideoForComment, postID)
+func (q *Queries) GetVideoForComment(ctx context.Context, commentID sql.NullInt64) ([]Video, error) {
+	rows, err := q.db.QueryContext(ctx, getVideoForComment, commentID)
 	if err != nil {
 		return nil, err
 	}

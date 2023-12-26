@@ -33,4 +33,4 @@ where v.id = $1;
 SELECT v.*
 FROM videos v
          join video_relations vr on v.id = vr.video_id
-where vr.post_id = $1;
+where vr.comment_id = $1;

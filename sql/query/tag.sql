@@ -14,6 +14,11 @@ INSERT INTO tags_relations (tag_id, post_id)
 VALUES ($1, $2)
 RETURNING *;
 
+-- name: CreateTagRelationForComment :one
+INSERT INTO tags_relations (tag_id, comment_id)
+VALUES ($1, $2)
+RETURNING *;
+
 -- name: GetPostsWithTagsPopular :many
 SELECT sqlc.embed(p), v.*
 FROM posts_view p

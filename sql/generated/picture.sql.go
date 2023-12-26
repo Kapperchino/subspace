@@ -82,11 +82,11 @@ const getPicturesForComment = `-- name: GetPicturesForComment :many
 SELECT p.id, p.url, p.width, p.height
 FROM pictures p
          join picture_releations pr on p.id = pr.picture_id
-where pr.post_id = $1
+where pr.comment_id = $1
 `
 
-func (q *Queries) GetPicturesForComment(ctx context.Context, postID sql.NullInt64) ([]Picture, error) {
-	rows, err := q.db.QueryContext(ctx, getPicturesForComment, postID)
+func (q *Queries) GetPicturesForComment(ctx context.Context, commentID sql.NullInt64) ([]Picture, error) {
+	rows, err := q.db.QueryContext(ctx, getPicturesForComment, commentID)
 	if err != nil {
 		return nil, err
 	}

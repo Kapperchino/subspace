@@ -24,6 +24,29 @@ func (q *Queries) CreateTag(ctx context.Context, name string) (Tag, error) {
 	return i, err
 }
 
+const createTagRelationForComment = `-- name: CreateTagRelationForComment :one
+INSERT INTO tags_relations (tag_id, comment_id)
+VALUES ($1, $2)
+RETURNING id, tag_id, post_id, comment_id
+`
+
+type CreateTagRelationForCommentParams struct {
+	TagID     sql.NullInt64
+	CommentID sql.NullInt64
+}
+
+func (q *Queries) CreateTagRelationForComment(ctx context.Context, arg CreateTagRelationForCommentParams) (TagsRelation, error) {
+	row := q.db.QueryRowContext(ctx, createTagRelationForComment, arg.TagID, arg.CommentID)
+	var i TagsRelation
+	err := row.Scan(
+		&i.ID,
+		&i.TagID,
+		&i.PostID,
+		&i.CommentID,
+	)
+	return i, err
+}
+
 const createTagRelationForPost = `-- name: CreateTagRelationForPost :one
 INSERT INTO tags_relations (tag_id, post_id)
 VALUES ($1, $2)

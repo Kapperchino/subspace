@@ -6,10 +6,8 @@ import (
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
-	"strings"
 )
 
 type PostService struct {
@@ -83,7 +81,7 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		log.Error().Err(err).Msg("Error while creating using in db")
 		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
 	}
-	tags, err := getTags(c, req, queries, post)
+	tags, err := util.GetTags(c, req.Body, queries, &post, nil)
 	if req.ContentType == models.CONTENT_PICTURE && req.FileIds != nil {
 		for _, id := range req.FileIds {
 			_, err := queries.CreatePictureRelation(c.Context(), gen.CreatePictureRelationParams{
@@ -156,70 +154,6 @@ func (u *PostService) CreatePost(c *fiber.Ctx) error {
 		DownVotes:    0,
 		Created:      post.Created.Time,
 	})
-}
-
-func getTags(c *fiber.Ctx, req *models.PostCreation, queries *gen.Queries, post gen.Post) ([]gen.Tag, error) {
-	var tags []gen.Tag
-	if req.Body != "" {
-		p := strings.NewReader(req.Body)
-		doc, _ := goquery.NewDocumentFromReader(p)
-		var mentions []string
-		var hashTags []string
-
-		doc.Find("span.mentions").Each(func(i int, s *goquery.Selection) {
-			mention, valid := s.Attr("data-id")
-			if valid {
-				mentions = append(mentions, mention)
-			}
-		})
-
-		doc.Find("span.hashtags").Each(func(i int, s *goquery.Selection) {
-			hashTag, valid := s.Attr("data-id")
-			if valid {
-				hashTags = append(hashTags, hashTag)
-			}
-		})
-
-		for _, s := range mentions {
-			user, err := queries.GetUserFromAddress(c.Context(), sql.NullString{
-				String: s,
-				Valid:  true,
-			})
-			if err != nil && errors.Is(err, sql.ErrNoRows) {
-				return nil, c.SendStatus(fiber.StatusNotFound)
-			}
-			if err != nil {
-				log.Error().Err(err).Msg("Error while creating using in db")
-				return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
-			}
-			_, err = queries.CreateUserAddress(c.Context(), gen.CreateUserAddressParams{
-				FromUserID: sql.NullInt64{Int64: req.PosterId, Valid: true},
-				ToUserID:   sql.NullInt64{Int64: user.User.ID, Valid: true},
-				PostID:     sql.NullInt64{Int64: post.ID, Valid: true},
-			})
-			if err != nil {
-				log.Error().Err(err).Msg("Error while creating using in db")
-				return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
-			}
-		}
-
-		for _, s := range hashTags {
-			tag, err := queries.GetTag(c.Context(), s)
-			if err != nil && errors.Is(err, sql.ErrNoRows) || tag.ID == 0 {
-				tag, err = queries.CreateTag(c.Context(), s)
-				if err != nil {
-					log.Error().Err(err).Msg("Error while creating using in db")
-					return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
-				}
-			}
-			if err != nil {
-				log.Error().Err(err).Msg("Error while creating using in db")
-				return nil, c.Status(fiber.StatusInternalServerError).SendStatus(500)
-			}
-			tags = append(tags, tag)
-		}
-	}
-	return tags, nil
 }
 
 func (u *PostService) GetPostById(c *fiber.Ctx) error {

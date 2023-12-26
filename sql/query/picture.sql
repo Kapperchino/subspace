@@ -23,7 +23,7 @@ where p.id = $1;
 SELECT p.*
 FROM pictures p
          join picture_releations pr on p.id = pr.picture_id
-where pr.post_id = $1;
+where pr.comment_id = $1;
 
 -- name: GetPicturesForPosts :many
 SELECT p.*

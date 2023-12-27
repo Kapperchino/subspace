@@ -58,7 +58,7 @@ SELECT sqlc.embed(cv), v.*
 from comments_view cv
          left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-where cv.id IN (allCommentsForComment);
+where cv.id IN (SELECT id from allCommentsForComment);
 
 -- name: GetCommentsForUser :many
 SELECT sqlc.embed(c)

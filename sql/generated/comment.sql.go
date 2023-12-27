@@ -122,7 +122,7 @@ SELECT cv.id, cv.post_id, cv.poster_id, cv.parent_id, cv.body, cv.content_type, 
 from comments_view cv
          left join votes v on v.user_id = $2 and cv.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-where cv.id IN (allCommentsForComment)
+where cv.id IN (SELECT id from allCommentsForComment)
 `
 
 type GetCommentsForCommentParams struct {

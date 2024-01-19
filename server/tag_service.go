@@ -32,7 +32,7 @@ func (d *TagService) GetPopularTags(c *fiber.Ctx) error {
 	queries := gen.New(d.getDB())
 	tags, err := queries.GetPopularTags(c.Context(), 7)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

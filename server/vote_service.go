@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -153,7 +154,7 @@ func (u *VoteService) GetVotesForPost(c *fiber.Ctx) error {
 		ID:     int64(id),
 		UserID: int64(userId),
 	})
-	if err != nil && err == sql.ErrNoRows {
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return c.SendStatus(200)
 	}
 	if err != nil {
@@ -189,7 +190,7 @@ func (u *VoteService) GetVotesForComment(c *fiber.Ctx) error {
 		ID:     int64(id),
 		UserID: int64(userId),
 	})
-	if err != nil && err == sql.ErrNoRows {
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return c.SendStatus(200)
 	}
 	if err != nil {

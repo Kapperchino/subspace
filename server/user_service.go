@@ -204,7 +204,7 @@ func (u *UserService) GetUserById(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	res, err := queries.GetUser(c.Context(), int64(id))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -232,7 +232,7 @@ func (u *UserService) GetUser(c *fiber.Ctx) error {
 			Valid:  true,
 		})
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return c.Send(nil)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -248,7 +248,7 @@ func (u *UserService) GetUser(c *fiber.Ctx) error {
 	}
 	res, err := queries.GetUserFromName(c.Context(), name)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

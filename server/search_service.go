@@ -39,7 +39,7 @@ func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 	if prefix != "" {
 		res, err := queries.SpacePrefixSearch(c.Context(), prefix)
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return c.Send(nil)
 			}
 			log.Error().Err(err).Msg("Error while searching db")
@@ -60,7 +60,7 @@ func (u *SearchService) SearchSpace(c *fiber.Ctx) error {
 	}
 	res, err := queries.SearchSpace(c.Context(), search)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while searching db")

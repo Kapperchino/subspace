@@ -77,7 +77,7 @@ func (u *SpaceService) GetSpaceById(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	res, err := queries.GetSpace(c.Context(), int64(id))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -104,7 +104,7 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		queries := gen.New(u.getDB())
 		res, err := queries.GetSpacesOfParent(c.Context(), int64(parentId))
 		if err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return c.Send(nil)
 			}
 			log.Error().Err(err).Msg("Error while creating using in db")
@@ -129,7 +129,7 @@ func (u *SpaceService) GetSpaces(c *fiber.Ctx) error {
 		ParentID: int64(parentId),
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -203,7 +203,7 @@ func (u *SpaceService) GetSpacesForUser(c *fiber.Ctx) error {
 	queries := gen.New(u.getDB())
 	res, err := queries.GetUserSpaces(c.Context(), int64(userId))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.Send(nil)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

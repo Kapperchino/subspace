@@ -186,7 +186,7 @@ func (u *CommentService) GetComments(c *fiber.Ctx) error {
 		UserID: int64(userId),
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusOK)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -53,7 +54,7 @@ func (s *SubscriptionService) CreateSubscription(c *fiber.Ctx) error {
 		SpaceID: sql.NullInt64{Int64: req.SpaceId, Valid: true},
 	})
 	var sub gen.Subscription
-	if err != nil && err == sql.ErrNoRows {
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		sub, err = queries.CreateSubscription(c.Context(), gen.CreateSubscriptionParams{
 			UserID: req.UserId,
 			SpaceID: sql.NullInt64{
@@ -108,7 +109,7 @@ func (s *SubscriptionService) GetSubscriptionsForUser(c *fiber.Ctx) error {
 			UserID:  int64(userId),
 			SpaceID: sql.NullInt64{Int64: int64(spaceId), Valid: true},
 		})
-		if err != nil && err == sql.ErrNoRows || sub.ID == 0 {
+		if err != nil && errors.Is(err, sql.ErrNoRows) || sub.ID == 0 {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		if err != nil {

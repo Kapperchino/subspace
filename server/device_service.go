@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/Kapperchino/subspace/models"
 	gen "github.com/Kapperchino/subspace/sql/generated"
 	"github.com/Kapperchino/subspace/util"
@@ -45,7 +46,7 @@ func (d *DeviceService) UpdateRegistration(c *fiber.Ctx) error {
 		UserID:       sql.NullInt64{Int64: req.UserId, Valid: true},
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")
@@ -66,7 +67,7 @@ func (d *DeviceService) GetDevice(c *fiber.Ctx) error {
 		UserID:     sql.NullInt64{Int64: int64(userId), Valid: true},
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		log.Error().Err(err).Msg("Error while creating using in db")

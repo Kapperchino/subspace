@@ -19,8 +19,4 @@ WORKDIR /app
 COPY --from=Builder /app/sql /app/sql
 COPY --from=Builder /app/subspace /app/subspace
 
-ENV PORT 8080
-
-EXPOSE $PORT
-
 ENTRYPOINT ["./subspace"]

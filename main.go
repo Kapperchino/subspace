@@ -10,6 +10,7 @@ import (
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -25,6 +26,7 @@ func main() {
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
 	})
+	app.Use(healthcheck.New())
 	validation := util.NewValidation()
 	validation.Validate.RegisterTagNameFunc(func(field reflect.StructField) string {
 		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
@@ -51,6 +53,10 @@ func main() {
 		log.Fatal().Err(err).Msg("Error with connection to objectStore")
 	}
 	videoClient, err := util.NewCloudFlareClient(config.BucketAccountId, config.CloudflareApiKey, config.Email)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error with connection to cloudflare")
+	}
+
 	userService := server.UserService{
 		DB:         db,
 		Config:     config,

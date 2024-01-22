@@ -53,3 +53,13 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Checkout devops
+        uses: actions/checkout@v4
+        with:
+          repository: 'https://github.com/Kapperchino/subspace-backend-devops.git'
+        run:
+          yq  -i eval '.image.tag = "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"' values.yaml
+          git add -A
+          git commit -m "$IMAGE_TAG update"
+          git push

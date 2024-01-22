@@ -58,7 +58,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'https://github.com/Kapperchino/subspace-backend-devops.git'
-        run:
+          path: devops
+
+      - name: Update devops
+        run: |
+          cd devops
           yq  -i eval '.image.tag = "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"' values.yaml
           git add -A
           git commit -m "$IMAGE_TAG update"

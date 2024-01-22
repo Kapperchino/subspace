@@ -59,6 +59,7 @@ jobs:
         with:
           repository: 'Kapperchino/subspace-backend-devops'
           path: devops
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Update devops
         run: |

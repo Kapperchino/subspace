@@ -57,7 +57,7 @@ jobs:
       - name: Checkout devops
         uses: actions/checkout@v4
         with:
-          repository: 'https://github.com/Kapperchino/subspace-backend-devops.git'
+          repository: 'Kapperchino/subspace-backend'
           path: devops
 
       - name: Update devops

@@ -347,32 +347,41 @@ func (q *Queries) GetCommentsForPostPopular(ctx context.Context, arg GetComments
 	return items, nil
 }
 
-const getCommentsForUser = `-- name: GetCommentsForUser :many
-SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.user_pic_url, c.user_pic_width, c.user_pic_height, c.user_pic_id, c.display_name, c.up_votes, c.down_votes
+const getCommentsForUserLatest = `-- name: GetCommentsForUserLatest :many
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.user_pic_url, c.user_pic_width, c.user_pic_height, c.user_pic_id, c.display_name, c.up_votes, c.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
 FROM comments_view c
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
 where c.poster_id = $1
+  AND current_timestamp - c.created < make_interval(days => $3)
+ORDER BY c.created DESC
 `
 
-type GetCommentsForUserParams struct {
+type GetCommentsForUserLatestParams struct {
 	PosterID int64
 	UserID   int64
+	Days     int32
 }
 
-type GetCommentsForUserRow struct {
-	CommentsView CommentsView
+type GetCommentsForUserLatestRow struct {
+	CommentsView    CommentsView
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
 }
 
-func (q *Queries) GetCommentsForUser(ctx context.Context, arg GetCommentsForUserParams) ([]GetCommentsForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getCommentsForUser, arg.PosterID, arg.UserID)
+func (q *Queries) GetCommentsForUserLatest(ctx context.Context, arg GetCommentsForUserLatestParams) ([]GetCommentsForUserLatestRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForUserLatest, arg.PosterID, arg.UserID, arg.Days)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetCommentsForUserRow
+	var items []GetCommentsForUserLatestRow
 	for rows.Next() {
-		var i GetCommentsForUserRow
+		var i GetCommentsForUserLatestRow
 		if err := rows.Scan(
 			&i.CommentsView.ID,
 			&i.CommentsView.PostID,
@@ -389,6 +398,83 @@ func (q *Queries) GetCommentsForUser(ctx context.Context, arg GetCommentsForUser
 			&i.CommentsView.DisplayName,
 			&i.CommentsView.UpVotes,
 			&i.CommentsView.DownVotes,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getCommentsForUserPopular = `-- name: GetCommentsForUserPopular :many
+SELECT c.id, c.post_id, c.poster_id, c.parent_id, c.body, c.content_type, c.is_deleted, c.created, c.user_pic_url, c.user_pic_width, c.user_pic_height, c.user_pic_id, c.display_name, c.up_votes, c.down_votes, v.id, v.is_up_vote, v.user_id, v.post_or_comment_id, v.vote_type, v.is_deleted
+FROM comments_view c
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
+where c.poster_id = $1
+  AND current_timestamp - c.created < make_interval(days => $3)
+ORDER BY up_votes DESC
+`
+
+type GetCommentsForUserPopularParams struct {
+	PosterID int64
+	UserID   int64
+	Days     int32
+}
+
+type GetCommentsForUserPopularRow struct {
+	CommentsView    CommentsView
+	ID              sql.NullInt64
+	IsUpVote        sql.NullBool
+	UserID          sql.NullInt64
+	PostOrCommentID sql.NullInt64
+	VoteType        NullVoteType
+	IsDeleted       sql.NullBool
+}
+
+func (q *Queries) GetCommentsForUserPopular(ctx context.Context, arg GetCommentsForUserPopularParams) ([]GetCommentsForUserPopularRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommentsForUserPopular, arg.PosterID, arg.UserID, arg.Days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommentsForUserPopularRow
+	for rows.Next() {
+		var i GetCommentsForUserPopularRow
+		if err := rows.Scan(
+			&i.CommentsView.ID,
+			&i.CommentsView.PostID,
+			&i.CommentsView.PosterID,
+			&i.CommentsView.ParentID,
+			&i.CommentsView.Body,
+			&i.CommentsView.ContentType,
+			&i.CommentsView.IsDeleted,
+			&i.CommentsView.Created,
+			&i.CommentsView.UserPicUrl,
+			&i.CommentsView.UserPicWidth,
+			&i.CommentsView.UserPicHeight,
+			&i.CommentsView.UserPicID,
+			&i.CommentsView.DisplayName,
+			&i.CommentsView.UpVotes,
+			&i.CommentsView.DownVotes,
+			&i.ID,
+			&i.IsUpVote,
+			&i.UserID,
+			&i.PostOrCommentID,
+			&i.VoteType,
+			&i.IsDeleted,
 		); err != nil {
 			return nil, err
 		}

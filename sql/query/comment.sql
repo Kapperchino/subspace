@@ -60,12 +60,23 @@ from comments_view cv
                               v.vote_type = 'comment'
 where cv.id IN (SELECT id from allCommentsForComment);
 
--- name: GetCommentsForUser :many
-SELECT sqlc.embed(c)
+-- name: GetCommentsForUserPopular :many
+SELECT sqlc.embed(c), v.*
 FROM comments_view c
          left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
                               v.vote_type = 'comment'
-where c.poster_id = $1;
+where c.poster_id = $1
+  AND current_timestamp - c.created < make_interval(days => $3)
+ORDER BY up_votes DESC;
+
+-- name: GetCommentsForUserLatest :many
+SELECT sqlc.embed(c), v.*
+FROM comments_view c
+         left join votes v on v.user_id = $2 and c.id = v.post_or_comment_id and
+                              v.vote_type = 'comment'
+where c.poster_id = $1
+  AND current_timestamp - c.created < make_interval(days => $3)
+ORDER BY c.created DESC;
 
 -- name: GetComment :one
 SELECT sqlc.embed(c)

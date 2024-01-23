@@ -162,6 +162,20 @@ func (u *CommentService) GetCommentById(c *fiber.Ctx) error {
 	return c.JSON(getCommentNoVote(res.CommentsView))
 }
 
+func (u *CommentService) GetCommentsForUser(c *fiber.Ctx) error {
+	posterId, err := c.ParamsInt("posterId", -1)
+	if posterId == -1 || err != nil {
+		return c.Status(fiber.StatusBadRequest).
+			SendString("userId is required")
+	}
+	userId := c.QueryInt("userId", -1)
+	sort := c.Query("sort", "latest")
+	days := c.QueryInt("days", 7)
+	queries := gen.New(u.getDB())
+
+	return getCommentsForUser(sort, days, userId, posterId, queries, c)
+}
+
 func (u *CommentService) GetComments(c *fiber.Ctx) error {
 	postId := c.QueryInt("postId", -1)
 	commentId := c.QueryInt("commentId", -1)
@@ -231,6 +245,53 @@ func getCommentsForPost(postId int, sort string, days int, userId int, queries *
 		PostID: int64(postId),
 		UserID: int64(userId),
 		Days:   int32(days),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return c.SendStatus(fiber.StatusOK)
+		}
+		log.Error().Err(err).Msg("Error while creating using in db")
+		return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+	}
+	var list []models.Comment
+	for _, comment := range res {
+		res, err := getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType, comment.IsDeleted, queries, c)
+		if err != nil {
+			return err
+		}
+		list = append(list, *res)
+	}
+	return c.JSON(list)
+}
+
+func getCommentsForUser(sort string, days int, userId int, posterId int, queries *gen.Queries, c *fiber.Ctx) error {
+	if sort == "popular" {
+		res, err := queries.GetCommentsForUserPopular(c.Context(), gen.GetCommentsForUserPopularParams{
+			PosterID: int64(posterId),
+			UserID:   int64(userId),
+			Days:     int32(days),
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return c.SendStatus(fiber.StatusOK)
+			}
+			log.Error().Err(err).Msg("Error while creating using in db")
+			return c.Status(fiber.StatusInternalServerError).SendStatus(500)
+		}
+		var list []models.Comment
+		for _, comment := range res {
+			res, err := getComment(comment.CommentsView, comment.IsUpVote, comment.VoteType, comment.IsDeleted, queries, c)
+			if err != nil {
+				return err
+			}
+			list = append(list, *res)
+		}
+		return c.JSON(list)
+	}
+	res, err := queries.GetCommentsForUserLatest(c.Context(), gen.GetCommentsForUserLatestParams{
+		PosterID: int64(posterId),
+		UserID:   int64(userId),
+		Days:     int32(days),
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

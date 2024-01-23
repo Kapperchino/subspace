@@ -160,6 +160,8 @@ func main() {
 
 	app.Get("/comments/", commentService.GetComments)
 
+	app.Get("/comments/users/:posterId", commentService.GetCommentsForUser)
+
 	//search
 	app.Get("/search/spaces/", searchService.SearchSpace)
 

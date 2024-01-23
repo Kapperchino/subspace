@@ -72,8 +72,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd devops
-          echo "joe $IMAGE"
-          yq  -i eval '.image.tag = $IMAGE' values.yaml
+          yq  -i eval '.image.tag = env(IMAGE)' values.yaml
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add -A

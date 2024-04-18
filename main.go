@@ -48,11 +48,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to db")
 	}
-	uploadClient, err := util.NewUploadClient(config.BucketName, config.BucketAccountId, config.BucketKeyId, config.BucketKeySecret)
+	uploadClient, err := util.NewUploadClient(config.BucketName, config.BucketUrl, config.BucketKeyId, config.BucketKeySecret)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to objectStore")
 	}
-	videoClient, err := util.NewCloudFlareClient(config.BucketAccountId, config.CloudflareApiKey, config.Email)
+	videoClient, err := util.NewCloudFlareClient(config.CloudflareAccountId, config.CloudflareApiKey, config.Email)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error with connection to cloudflare")
 	}

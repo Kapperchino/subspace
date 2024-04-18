@@ -3,7 +3,6 @@ package util
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -19,10 +18,10 @@ type UploadClient struct {
 	BucketName string
 }
 
-func NewUploadClient(bucketName string, accountId string, keyId string, secret string) (*UploadClient, error) {
+func NewUploadClient(bucketName string, url string, keyId string, secret string) (*UploadClient, error) {
 	r2Resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		return aws.Endpoint{
-			URL: fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId),
+			URL: url,
 		}, nil
 	})
 
